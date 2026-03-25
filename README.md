@@ -14,12 +14,13 @@ A production-grade Shopify embedded app built with **Remix**, designed for **mid
 # 📌 Table of Contents
 
 1. High-Level Architecture
-2. Technical Philosophy & Rules
-3. Core Feature: Filters & Sorting Engine
-4. Personalization Strategy
-5. Directory Structure
-6. Local Setup & Environment
-7. Data Flow Patterns
+2. Merchant Onboarding Flow
+3. Technical Philosophy & Rules
+4. Core Feature: Filters & Sorting Engine
+5. Personalization Strategy
+6. Directory Structure
+7. Local Setup & Environment
+8. Data Flow Patterns
 
 ---
 
@@ -79,7 +80,167 @@ A production-grade Shopify embedded app built with **Remix**, designed for **mid
 
 ---
 
-# 2️⃣ Technical Philosophy & Rules
+# 2️⃣ Merchant Onboarding Flow
+
+## 🧠 Overview
+
+Merchants are guided through a structured onboarding process to configure the app before going live.
+
+---
+
+### 🔹 Step 1: Welcome Screen
+
+```
+🎉 Welcome to AI Search & Recommendation
+
+Let’s set up your store in 3 steps:
+[1] Sync Products
+[2] Configure Filters & Sorting
+[3] Enable Storefront
+```
+
+CTA: **Start Setup**
+
+---
+
+### 🔹 Step 2: Product Sync
+
+```
+📦 Sync Your Products
+
+We will import your products to power search & recommendations.
+
+[ Start Sync ]
+```
+
+Backend Flow:
+
+```
+Shopify API → Queue → Worker → Database
+```
+
+Progress:
+
+```
+✔ 1200 / 5000 products synced
+```
+
+---
+
+### 🔹 Step 3: Filter Configuration
+
+Auto-detection:
+
+```
+- Tags (color, size)
+- Price
+- Vendor
+```
+
+UI:
+
+```
+🎯 Create Your Filters
+
+Recommended:
+[✔] Color
+[✔] Size
+[✔] Price
+```
+
+Merchant can:
+
+* Select data source (tags / metafields / variants)
+* Enable / disable filters
+
+---
+
+### 🔹 Step 4: Sorting Configuration
+
+```
+🔃 Sorting Options
+
+[ Price Low → High ]
+[ Price High → Low ]
+[ Newest ]
+[ Popularity ]
+```
+
+* Drag & drop order
+* Enable / disable options
+
+---
+
+### 🔹 Step 5: Storefront Integration
+
+```
+🎨 Add App to Your Store
+
+[ Customize Theme ]
+```
+
+* Opens Shopify theme editor
+* Add blocks:
+
+  * Filters
+  * Search
+  * Recommendations
+
+---
+
+### 🔹 Step 6: AI Feature Toggle
+
+```
+🤖 Enable Smart Features
+
+[✔] Recommendations
+[✔] Intent Search
+```
+
+---
+
+### 🔹 Step 7: Dashboard
+
+```
+📈 Performance
+
+Searches: 1,245
+Recommendation Clicks: 320
+Conversion Boost: +12%
+```
+
+Sections:
+
+* Filters Manager
+* Sorting Manager
+* Recommendations Settings
+* Search Settings
+* Sync Status
+
+---
+
+## 🔄 Final Flow
+
+```
+Install App
+    ↓
+Welcome Screen
+    ↓
+Product Sync
+    ↓
+Filter Setup
+    ↓
+Sorting Setup
+    ↓
+Theme Integration
+    ↓
+AI Enable
+    ↓
+Dashboard
+```
+---
+
+# 3️⃣ Technical Philosophy & Rules
 
 ## ⚡ Rule 1: API-First Architecture
 
@@ -136,7 +297,7 @@ If AI fails:
 
 ---
 
-# 3️⃣ Core Feature: Filters & Sorting Engine
+# 4️⃣ Core Feature: Filters & Sorting Engine
 
 ## 🧠 Overview
 
@@ -296,7 +457,7 @@ is_active
 
 ---
 
-# 4️⃣ Personalization Strategy
+# 5️⃣ Personalization Strategy
 
 ## 🧠 Overview
 
@@ -382,7 +543,7 @@ timestamp
 
 ---
 
-# 5️⃣ Directory Structure
+# 6️⃣ Directory Structure
 
 ```
 /app
@@ -448,7 +609,7 @@ timestamp
 
 ---
 
-# 6️⃣ Local Setup & Environment
+# 7️⃣ Local Setup & Environment
 
 ## 🔧 Requirements
 
@@ -459,7 +620,7 @@ timestamp
 
 ---
 
-## 🔑 Environment Variables
+## 🔑 Environment Variables Example
 
 ```
 SHOPIFY_API_KEY=
@@ -494,7 +655,7 @@ APP_URL=
 
 ---
 
-# 7️⃣ Data Flow Patterns
+# 8️⃣ Data Flow Patterns
 
 ## 🔄 Product Sync Flow
 
