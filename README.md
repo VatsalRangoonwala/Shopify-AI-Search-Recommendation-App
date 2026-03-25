@@ -302,41 +302,41 @@ is_active
 ```
 /app
   /routes
-    auth.login.tsx
-    auth.callback.tsx
-    dashboard.tsx
-    api.recommendations.ts
-    api.search.ts
-    api.filters.ts
-    api.sorting.ts
+    auth.login.jsx
+    auth.callback.jsx
+    dashboard.jsx
+    api.recommendations.js
+    api.search.js
+    api.filters.js
+    api.sorting.js
 
   /services
-    shopify.server.ts
-    product.service.ts
-    recommendation.service.ts
-    search.service.ts
-    ai.service.ts
-    filter.service.ts
-    sorting.service.ts
+    shopify.server.js
+    product.service.js
+    recommendation.service.js
+    search.service.js
+    ai.service.js
+    filter.service.js
+    sorting.service.js
 
   /models
-    product.model.ts
-    event.model.ts
-    filter.model.ts
-    sorting.model.ts
-    store.model.ts
+    product.model.js
+    event.model.js
+    filter.model.js
+    sorting.model.js
+    store.model.js
 
   /workers
-    productSync.worker.ts
-    aiProcessing.worker.ts
+    productSync.worker.js
+    aiProcessing.worker.js
 
   /queues
-    queue.ts
+    queue.js
 
   /utils
-    logger.ts
-    cache.ts
-    session.ts
+    logger.js
+    cache.js
+    session.js
 
   /components
     AdminUI/
@@ -354,8 +354,8 @@ is_active
   schema.prisma
 
 /config
-  redis.ts
-  db.ts
+  redis.js
+  db.js
 
 /env
   .env
@@ -374,7 +374,7 @@ is_active
 
 ---
 
-## 🔑 Environment Variables
+## 🔑 Environment Variables Example
 
 ```
 SHOPIFY_API_KEY=
