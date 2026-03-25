@@ -4,8 +4,8 @@ A production-grade Shopify embedded app built with **Remix**, designed for **mid
 
 * AI-powered product recommendations (via external APIs)
 * Intent-based search
-* **Dynamic admin-controlled filters & sorting UI**
-* **Hybrid personalization (user + session based)**
+* Dynamic admin-controlled filters & sorting UI
+* Hybrid personalization (user + session based)
 * Anonymous user behavior tracking
 * Scalable infrastructure (queue + cache + workers)
 
