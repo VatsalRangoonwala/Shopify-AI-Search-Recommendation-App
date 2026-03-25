@@ -4,7 +4,8 @@ A production-grade Shopify embedded app built with **Remix**, designed for **mid
 
 * AI-powered product recommendations (via external APIs)
 * Intent-based search
-* Dynamic admin-controlled filters & sorting UI
+* **Dynamic admin-controlled filters & sorting UI**
+* **Hybrid personalization (user + session based)**
 * Anonymous user behavior tracking
 * Scalable infrastructure (queue + cache + workers)
 
@@ -15,12 +16,10 @@ A production-grade Shopify embedded app built with **Remix**, designed for **mid
 1. High-Level Architecture
 2. Technical Philosophy & Rules
 3. Core Feature: Filters & Sorting Engine
-4. Directory Structure
-5. Local Setup & Environment
-6. Data Flow Patterns
-7. Testing Strategy
-8. Deployment Pipeline
-9. Common Gotchas
+4. Personalization Strategy
+5. Directory Structure
+6. Local Setup & Environment
+7. Data Flow Patterns
 
 ---
 
@@ -297,7 +296,93 @@ is_active
 
 ---
 
-# 4️⃣ Directory Structure
+# 4️⃣ Personalization Strategy
+
+## 🧠 Overview
+
+The system supports **hybrid personalization**:
+
+* User-based (logged-in users)
+* Session-based (guest users)
+* General fallback (cold start)
+
+---
+
+## 🔹 User-Based Personalization (Logged-in)
+
+* Uses Shopify customer ID
+* Tracks behavior across sessions
+* Can be extended with order history
+
+---
+
+## 🔹 Session-Based Personalization (Guest)
+
+* Uses anonymous session ID
+* Tracks short-term behavior
+
+---
+
+## 🔹 General Recommendation (Fallback)
+
+* Trending products
+* Best sellers
+* New arrivals
+
+---
+
+## 🔄 Decision Logic
+
+```
+IF customer_id exists:
+    → User-based personalization
+ELSE IF session has data:
+    → Session-based personalization
+ELSE:
+    → General recommendations
+```
+
+---
+
+## 🔄 Session Merge Strategy
+
+When a user logs in:
+
+```
+Session data → Attach to customer profile
+```
+
+---
+
+## 🗄️ Database Additions
+
+### 📊 Customers Table
+
+```
+id
+store_id
+shopify_customer_id
+email
+created_at
+```
+
+---
+
+### 📊 Events Table
+
+```
+id
+store_id
+session_id (nullable)
+customer_id (nullable)
+type
+product_id
+timestamp
+```
+
+---
+
+# 5️⃣ Directory Structure
 
 ```
 /app
@@ -363,7 +448,7 @@ is_active
 
 ---
 
-# 5️⃣ Local Setup & Environment
+# 6️⃣ Local Setup & Environment
 
 ## 🔧 Requirements
 
@@ -374,7 +459,7 @@ is_active
 
 ---
 
-## 🔑 Environment Variables Example
+## 🔑 Environment Variables
 
 ```
 SHOPIFY_API_KEY=
@@ -409,7 +494,7 @@ APP_URL=
 
 ---
 
-# 6️⃣ Data Flow Patterns
+# 7️⃣ Data Flow Patterns
 
 ## 🔄 Product Sync Flow
 
@@ -456,5 +541,3 @@ Apply Sorting
         ↓
 Return Results
 ```
-
----
