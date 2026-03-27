@@ -1,0 +1,22 @@
+# Dependencies
+node_modules
+
+# Build artifacts
+/.cache
+/build
+/app/build
+/public/build/
+/app/public/build
+
+# Environment files
+.env
+
+# Local database files
+/prisma/dev.sqlite
+/prisma/dev.sqlite-journal
+database.sqlite
+
+# Lockfiles
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
