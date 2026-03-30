@@ -1,0 +1,38 @@
+<select id="ai-sorting"></select>
+
+<script>
+  const shop = '{{ shop.domain }}';
+
+  async function loadSorting() {
+    try {
+      const res = await fetch(`/apps/api/sorting?shop=${shop}`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      console.log('Sorting data:', res); // 👈 check this
+      const sorting = await res.json();
+
+      const select = document.getElementById('ai-sorting');
+
+      sorting.forEach((option) => {
+        const opt = document.createElement('option');
+        opt.value = option.name;
+        opt.textContent = option.label;
+        select.appendChild(opt);
+      });
+    } catch (err) {
+      console.error('Error loading sorting:', err);
+    }
+  }
+
+  loadSorting();
+</script>
+
+{% schema %}
+{
+  "name": "Sorting",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

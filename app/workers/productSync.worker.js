@@ -16,7 +16,7 @@ const worker = new Worker(
     // 🔥 HANDLE DIFFERENT JOB TYPES
 
     switch (job.name) {
-      case "sync-product": {
+      case "product-sync": {
         const { product, syncJobId } = job.data;
 
         await prisma.product.upsert({
@@ -87,7 +87,7 @@ const worker = new Worker(
 );
 
 worker.on("completed", job => {
-  console.log(`✅ Job done: ${job.name}`);
+  console.log(`✅ Job done: ${job.name}, Job ID: ${job.id}`);
 });
 
 worker.on("failed", (job, err) => {
