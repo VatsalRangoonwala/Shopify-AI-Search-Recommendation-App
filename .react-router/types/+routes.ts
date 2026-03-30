@@ -20,7 +20,22 @@ type Pages = {
   "/webhooks/app/uninstalled": {
     params: {};
   };
+  "/webhooks/products/create": {
+    params: {};
+  };
+  "/webhooks/products/delete": {
+    params: {};
+  };
+  "/webhooks/products/update": {
+    params: {};
+  };
+  "/api/sync-status": {
+    params: {};
+  };
   "/auth/login": {
+    params: {};
+  };
+  "/api/sync": {
     params: {};
   };
   "/auth/*": {
@@ -39,7 +54,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/auth/login" | "/auth/*" | "/app" | "/app/additional";
+    page: "/" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/sync-status" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/additional";
   };
   "routes/webhooks.app.scopes_update.jsx": {
     id: "routes/webhooks.app.scopes_update";
@@ -49,9 +64,29 @@ type RouteFiles = {
     id: "routes/webhooks.app.uninstalled";
     page: "/webhooks/app/uninstalled";
   };
+  "routes/webhooks.products.create.jsx": {
+    id: "routes/webhooks.products.create";
+    page: "/webhooks/products/create";
+  };
+  "routes/webhooks.products.delete.jsx": {
+    id: "routes/webhooks.products.delete";
+    page: "/webhooks/products/delete";
+  };
+  "routes/webhooks.products.update.jsx": {
+    id: "routes/webhooks.products.update";
+    page: "/webhooks/products/update";
+  };
+  "routes/api.sync-status.jsx": {
+    id: "routes/api.sync-status";
+    page: "/api/sync-status";
+  };
   "routes/auth.login/route.jsx": {
     id: "routes/auth.login";
     page: "/auth/login";
+  };
+  "routes/api.sync.jsx": {
+    id: "routes/api.sync";
+    page: "/api/sync";
   };
   "routes/_index/route.jsx": {
     id: "routes/_index";
@@ -79,7 +114,12 @@ type RouteModules = {
   "root": typeof import("./app/root.jsx");
   "routes/webhooks.app.scopes_update": typeof import("./app/routes/webhooks.app.scopes_update.jsx");
   "routes/webhooks.app.uninstalled": typeof import("./app/routes/webhooks.app.uninstalled.jsx");
+  "routes/webhooks.products.create": typeof import("./app/routes/webhooks.products.create.jsx");
+  "routes/webhooks.products.delete": typeof import("./app/routes/webhooks.products.delete.jsx");
+  "routes/webhooks.products.update": typeof import("./app/routes/webhooks.products.update.jsx");
+  "routes/api.sync-status": typeof import("./app/routes/api.sync-status.jsx");
   "routes/auth.login": typeof import("./app/routes/auth.login/route.jsx");
+  "routes/api.sync": typeof import("./app/routes/api.sync.jsx");
   "routes/_index": typeof import("./app/routes/_index/route.jsx");
   "routes/auth.$": typeof import("./app/routes/auth.$.jsx");
   "routes/app": typeof import("./app/routes/app.jsx");

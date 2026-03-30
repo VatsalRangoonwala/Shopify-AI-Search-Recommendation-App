@@ -1,34 +1,103 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
-  provider = "sqlite"
-  url      = "file:dev.sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String   @id
+  shop                String
+  state               String
+  isOnline            Boolean  @default(false)
+  scope               String?
+  expires             DateTime @default(now())
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean  @default(false)
+  locale              String?
+  collaborator        Boolean? @default(false)
+  emailVerified       Boolean? @default(false)
   refreshToken        String?
-  refreshTokenExpires DateTime?
+  refreshTokenExpires DateTime @default(now())
+}
+
+model Store {
+  id          String   @id @default(cuid())
+  shop        String   @unique
+  accessToken String
+  createdAt   DateTime @default(now())
+
+  products Product[]
+  filters  Filter[]
+  sorting  Sorting[]
+  events   Event[]
+  syncJobs SyncJob[]
+}
+
+model Product {
+  id          String   @id
+  storeId     String
+  title       String
+  description String?
+  price       Float
+  tags        String[]
+  createdAt   DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id])
+}
+
+model Filter {
+  id       String  @id @default(cuid())
+  storeId  String
+  name     String
+  field    String
+  type     String
+  uiType   String
+  values   Json
+  position Int
+  isActive Boolean @default(true)
+
+  store Store @relation(fields: [storeId], references: [id])
+}
+
+model Sorting {
+  id       String  @id @default(cuid())
+  storeId  String
+  name     String
+  label    String
+  field    String
+  order    String
+  position Int
+  isActive Boolean @default(true)
+
+  store Store @relation(fields: [storeId], references: [id])
+}
+
+model Event {
+  id         String   @id @default(cuid())
+  storeId    String
+  sessionId  String?
+  customerId String?
+  type       String
+  productId  String
+  timestamp  DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id])
+}
+
+model SyncJob {
+  id            String   @id @default(cuid())
+  storeId       String
+  status        String // pending | running | completed
+  totalProducts Int      @default(0)
+  processed     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id])
 }

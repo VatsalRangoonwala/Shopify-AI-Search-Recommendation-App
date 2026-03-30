@@ -22,6 +22,74 @@ const shopify = shopifyApp({
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
     : {}),
+
+  hooks: {
+    afterAuth: async ({ session, admin }) => {
+      const { shop, accessToken } = session;
+
+      // Save store
+      await prisma.store.upsert({
+        where: { shop },
+        update: { accessToken },
+        create: {
+          shop,
+          accessToken,
+        },
+      });
+
+      // Register Webhooks
+      await admin.graphql(`
+      mutation {
+        webhookSubscriptionCreate(
+          topic: PRODUCTS_CREATE
+          webhookSubscription: {
+            callbackUrl: "${process.env.APP_URL}/webhooks/products/create"
+            format: JSON
+          }
+        ) {
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `);
+
+      await admin.graphql(`
+      mutation {
+        webhookSubscriptionCreate(
+          topic: PRODUCTS_UPDATE
+          webhookSubscription: {
+            callbackUrl: "${process.env.APP_URL}/webhooks/products/update"
+            format: JSON
+          }
+        ) {
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `);
+
+      await admin.graphql(`
+      mutation {
+        webhookSubscriptionCreate(
+          topic: PRODUCTS_DELETE
+          webhookSubscription: {
+            callbackUrl: "${process.env.APP_URL}/webhooks/products/delete"
+            format: JSON
+          }
+        ) {
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `);
+    },
+  },
 });
 
 export default shopify;
