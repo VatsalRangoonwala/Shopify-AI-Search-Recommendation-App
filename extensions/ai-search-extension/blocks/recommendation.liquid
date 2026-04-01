@@ -1,0 +1,110 @@
+<div class="ai-recommendations">
+  <h3>{{ block.settings.title }}</h3>
+
+  <div id="ai-recommendations-grid" class="ai-grid"></div>
+</div>
+
+<style>
+.ai-recommendations {
+  padding: 16px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  margin-top: 20px;
+}
+
+.ai-recommendations h3 {
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+/* 🔥 Shared Grid System */
+.ai-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+/* 🔥 Card Design */
+.ai-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.ai-card h4 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.ai-card p {
+  font-size: 14px;
+  color: #555;
+}
+</style>
+
+<script>
+async function loadRecommendations() {
+  const sessionId = localStorage.getItem('ai_session_id');
+  const shop = "{{ shop.domain }}";
+
+  const res = await fetch('/apps/api/recommendations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      shop,
+      sessionId,
+    }),
+  });
+
+  const products = await res.json();
+
+  const container = document.getElementById('ai-recommendations-grid');
+  container.innerHTML = "";
+
+  products.forEach((p) => {
+    const card = document.createElement('div');
+    card.className = 'ai-card';
+
+    card.innerHTML = `
+      <h4>${p.title}</h4>
+      <p>₹ ${p.price}</p>
+    `;
+
+    // 🔥 Track click
+    card.addEventListener('click', () => {
+      if (typeof trackEvent === "function") {
+        trackEvent('recommendation_click', p.id);
+      }
+    });
+
+    container.appendChild(card);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", loadRecommendations);
+</script>
+
+{% schema %}
+{
+  "name": "AI Recommended Products",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "Recommended for you"
+    }
+  ]
+}
+{% endschema %}

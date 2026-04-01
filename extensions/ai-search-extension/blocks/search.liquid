@@ -1,61 +1,133 @@
-<div id="ai-products"></div>
+<div class="ai-products">
+  <h3>{{ block.settings.title }}</h3>
+  <input id="search-input" placeholder="Search products...">
+
+  <div id="ai-products-grid" class="grid"></div>
+</div>
+
+<style>
+  .ai-products .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .ai-product-card {
+    border: 1px solid #eee;
+    padding: 10px;
+    border-radius: 6px;
+  }
+
+  .ai-product-card h4 {
+    font-size: 16px;
+  }
+</style>
 
 <script>
-  const shop = "{{ shop.domain }}";
+  function getOrCreateSessionId() {
+    let sessionId = localStorage.getItem('ai_session_id');
 
-  async function searchProducts() {
-    const selectedFilters = {};
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem('ai_session_id', sessionId);
+    }
 
-    document.querySelectorAll("input[type=checkbox]:checked")
-      .forEach(input => {
-        const key = input.dataset.filter;
+    return sessionId;
+  }
+  async function trackEvent(type, productId) {
+    try {
+      const sessionId = getOrCreateSessionId();
 
-        if (!selectedFilters[key]) {
-          selectedFilters[key] = [];
-        }
-
-        selectedFilters[key].push(input.value);
+      await fetch('/apps/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type,
+          productId,
+          sessionId,
+          shop: Shopify.shop,
+        }),
       });
+    } catch (err) {
+      console.error('Tracking failed', err);
+    }
+  }
+  async function fetchProducts() {
+    const shop = '{{ shop.domain }}';
+    const query = document.getElementById('search-input')?.value || '';
 
-    const sort = document.getElementById("ai-sorting")?.value;
+    // 🔥 TRACK SEARCH EVENT
+    if (query && query.trim().length > 0) {
+      trackEvent('search', query);
+    }
+
+    const filters = {};
+    document.querySelectorAll('input[type=checkbox]:checked').forEach((input) => {
+      const key = input.dataset.filter;
+      if (!filters[key]) filters[key] = [];
+      filters[key].push(input.value);
+    });
+
+    const sort = document.getElementById('ai-sorting-select')?.value;
 
     const res = await fetch(`/apps/api/search`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
       },
-      body: JSON.stringify({
-        shop,
-        filters: selectedFilters,
-        sort,
-      }),
-    });
+      body: JSON.stringify({ shop, filters, sort, query }),
+    }).catch((err) => console.log('err:', err));
 
     const products = await res.json();
 
-    const container = document.getElementById("ai-products");
-    container.innerHTML = "";
+    const grid = document.getElementById('ai-products-grid');
+    grid.innerHTML = '';
 
-    products.forEach(p => {
-      const div = document.createElement("div");
+    products.forEach((p) => {
+      const card = document.createElement('div');
+      card.className = 'ai-product-card';
 
-      div.innerHTML = `
-        <h3>${p.title}</h3>
-        <p>₹ ${p.price}</p>
-      `;
+      card.innerHTML = `
+      <h4>${p.title}</h4>
+      <p>₹ ${p.price}</p>
+      <button data-id="${p.id}">Add to Cart</button>
+      <button class="rec-btn" data-id="${p.id}">View Product</button>
+    `;
 
-      container.appendChild(div);
+      card.addEventListener('click', () => {
+        trackEvent('view', p.id);
+      });
+
+      card.querySelector('button').addEventListener('click', () => {
+        trackEvent('add_to_cart', p.id);
+      });
+
+      card.querySelector('.rec-btn').addEventListener('click', () => {
+        trackEvent('recommendation_click', p.id);
+      });
+
+      grid.appendChild(card);
     });
   }
 
-  // Trigger search on change
-  document.addEventListener("change", searchProducts);
+  document.addEventListener('change', fetchProducts);
+  document.addEventListener('DOMContentLoaded', fetchProducts);
 </script>
 
 {% schema %}
 {
-  "name": "Search",
+  "name": "AI Product Grid",
   "target": "section",
-  "settings": []
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "Products"
+    }
+  ]
 }
 {% endschema %}

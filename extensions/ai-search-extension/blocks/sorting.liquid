@@ -1,38 +1,53 @@
-<select id="ai-sorting"></select>
+<div class="ai-sorting">
+  <label>{{ block.settings.label }}</label>
 
-<script>
-  const shop = '{{ shop.domain }}';
+  <select id="ai-sorting-select"></select>
+</div>
 
-  async function loadSorting() {
-    try {
-      const res = await fetch(`/apps/api/sorting?shop=${shop}`, {
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-        },
-      });
-      console.log('Sorting data:', res); // 👈 check this
-      const sorting = await res.json();
-
-      const select = document.getElementById('ai-sorting');
-
-      sorting.forEach((option) => {
-        const opt = document.createElement('option');
-        opt.value = option.name;
-        opt.textContent = option.label;
-        select.appendChild(opt);
-      });
-    } catch (err) {
-      console.error('Error loading sorting:', err);
-    }
+<style>
+  .ai-sorting {
+    margin-bottom: 20px;
   }
 
-  loadSorting();
+  .ai-sorting select {
+    padding: 8px;
+    width: 100%;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const shop = '{{ shop.domain }}';
+
+    const res = await fetch(`/apps/api/sorting?shop=${shop}`, {
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+    });
+    const sorting = await res.json();
+
+    const select = document.getElementById('ai-sorting-select');
+
+    sorting.forEach((option) => {
+      const opt = document.createElement('option');
+      opt.value = option.name;
+      opt.textContent = option.label;
+      select.appendChild(opt);
+    });
+  });
 </script>
 
 {% schema %}
 {
-  "name": "Sorting",
+  "name": "AI Sorting",
   "target": "section",
-  "settings": []
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Sorting Label",
+      "default": "Sort By"
+    }
+  ]
 }
 {% endschema %}

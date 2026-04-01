@@ -29,16 +29,31 @@ type Pages = {
   "/webhooks/products/update": {
     params: {};
   };
+  "/webhooks/orders/create": {
+    params: {};
+  };
+  "/api/recommendations": {
+    params: {};
+  };
   "/api/admin/filters": {
     params: {};
   };
   "/api/sync-status": {
     params: {};
   };
+  "/api/analytics": {
+    params: {};
+  };
   "/api/filters": {
     params: {};
   };
+  "/api/similar": {
+    params: {};
+  };
   "/api/sorting": {
+    params: {};
+  };
+  "/api/events": {
     params: {};
   };
   "/api/search": {
@@ -61,6 +76,9 @@ type Pages = {
   "/app/additional": {
     params: {};
   };
+  "/app/dashboard": {
+    params: {};
+  };
   "/app/filters": {
     params: {};
   };
@@ -69,7 +87,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/admin/filters" | "/api/sync-status" | "/api/filters" | "/api/sorting" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/additional" | "/app/filters";
+    page: "/" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/webhooks/orders/create" | "/api/recommendations" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/additional" | "/app/dashboard" | "/app/filters";
   };
   "routes/webhooks.app.scopes_update.jsx": {
     id: "routes/webhooks.app.scopes_update";
@@ -91,6 +109,14 @@ type RouteFiles = {
     id: "routes/webhooks.products.update";
     page: "/webhooks/products/update";
   };
+  "routes/webhooks.orders.create.jsx": {
+    id: "routes/webhooks.orders.create";
+    page: "/webhooks/orders/create";
+  };
+  "routes/api.recommendations.jsx": {
+    id: "routes/api.recommendations";
+    page: "/api/recommendations";
+  };
   "routes/api.admin.filters.jsx": {
     id: "routes/api.admin.filters";
     page: "/api/admin/filters";
@@ -99,13 +125,25 @@ type RouteFiles = {
     id: "routes/api.sync-status";
     page: "/api/sync-status";
   };
+  "routes/api.analytics.jsx": {
+    id: "routes/api.analytics";
+    page: "/api/analytics";
+  };
   "routes/api.filters.jsx": {
     id: "routes/api.filters";
     page: "/api/filters";
   };
+  "routes/api.similar.jsx": {
+    id: "routes/api.similar";
+    page: "/api/similar";
+  };
   "routes/api.sorting.jsx": {
     id: "routes/api.sorting";
     page: "/api/sorting";
+  };
+  "routes/api.events.jsx": {
+    id: "routes/api.events";
+    page: "/api/events";
   };
   "routes/api.search.jsx": {
     id: "routes/api.search";
@@ -129,11 +167,15 @@ type RouteFiles = {
   };
   "routes/app.jsx": {
     id: "routes/app";
-    page: "/app" | "/app/additional" | "/app/filters";
+    page: "/app" | "/app/additional" | "/app/dashboard" | "/app/filters";
   };
   "routes/app.additional.jsx": {
     id: "routes/app.additional";
     page: "/app/additional";
+  };
+  "routes/app.dashboard.jsx": {
+    id: "routes/app.dashboard";
+    page: "/app/dashboard";
   };
   "routes/app.filters.jsx": {
     id: "routes/app.filters";
@@ -152,10 +194,15 @@ type RouteModules = {
   "routes/webhooks.products.create": typeof import("./app/routes/webhooks.products.create.jsx");
   "routes/webhooks.products.delete": typeof import("./app/routes/webhooks.products.delete.jsx");
   "routes/webhooks.products.update": typeof import("./app/routes/webhooks.products.update.jsx");
+  "routes/webhooks.orders.create": typeof import("./app/routes/webhooks.orders.create.jsx");
+  "routes/api.recommendations": typeof import("./app/routes/api.recommendations.jsx");
   "routes/api.admin.filters": typeof import("./app/routes/api.admin.filters.jsx");
   "routes/api.sync-status": typeof import("./app/routes/api.sync-status.jsx");
+  "routes/api.analytics": typeof import("./app/routes/api.analytics.jsx");
   "routes/api.filters": typeof import("./app/routes/api.filters.jsx");
+  "routes/api.similar": typeof import("./app/routes/api.similar.jsx");
   "routes/api.sorting": typeof import("./app/routes/api.sorting.jsx");
+  "routes/api.events": typeof import("./app/routes/api.events.jsx");
   "routes/api.search": typeof import("./app/routes/api.search.jsx");
   "routes/auth.login": typeof import("./app/routes/auth.login/route.jsx");
   "routes/api.sync": typeof import("./app/routes/api.sync.jsx");
@@ -163,6 +210,7 @@ type RouteModules = {
   "routes/auth.$": typeof import("./app/routes/auth.$.jsx");
   "routes/app": typeof import("./app/routes/app.jsx");
   "routes/app.additional": typeof import("./app/routes/app.additional.jsx");
+  "routes/app.dashboard": typeof import("./app/routes/app.dashboard.jsx");
   "routes/app.filters": typeof import("./app/routes/app.filters.jsx");
   "routes/app._index": typeof import("./app/routes/app._index.jsx");
 };

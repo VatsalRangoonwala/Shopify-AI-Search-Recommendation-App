@@ -1,9 +1,38 @@
-<div style="width: 200px; height: 100px; background-color: lightblue;" id="ai-filters-root"></div>
+<div class="ai-filters">
+  <h3>{{ block.settings.title }}</h3>
+
+  <div id="ai-filters-root"></div>
+</div>
+
+<style>
+  .ai-filters {
+    padding: 16px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+
+  .ai-filters h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .ai-filter-group {
+    margin-bottom: 15px;
+  }
+
+  .ai-filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    cursor: pointer;
+  }
+</style>
 
 <script>
-  const shop = '{{ shop.domain }}';
+  
+  document.addEventListener('DOMContentLoaded', async () => {
+    const shop = '{{ shop.domain }}';
 
-  async function loadFilters() {
     const res = await fetch(`/apps/api/filters?shop=${shop}`, {
       headers: {
         'ngrok-skip-browser-warning': 'true',
@@ -14,33 +43,39 @@
     const container = document.getElementById('ai-filters-root');
 
     filters.forEach((filter) => {
-      const div = document.createElement('div');
+      const group = document.createElement('div');
+      group.className = 'ai-filter-group';
 
-      div.innerHTML = `
-        <h4>${filter.name}</h4>
-        ${filter.values
-          .map(
-            (val) => `
-          <label>
-            <input type="checkbox" value="${val}" data-filter="${filter.name}" />
-            ${val}
-          </label>
-        `
-          )
-          .join('')}
+      let html = `<strong>${filter.name}</strong>`;
+
+      filter.values.forEach((val) => {
+        html += `
+        <label>
+          <input type="checkbox"
+                 data-filter="${filter.name}"
+                 value="${val}" />
+          ${val}
+        </label>
       `;
+      });
 
-      container.appendChild(div);
+      group.innerHTML = html;
+      container.appendChild(group);
     });
-  }
-
-  loadFilters();
+  });
 </script>
 
 {% schema %}
 {
-  "name": "Filters",
+  "name": "AI Filters",
   "target": "section",
-  "settings": []
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "Filters"
+    }
+  ]
 }
 {% endschema %}

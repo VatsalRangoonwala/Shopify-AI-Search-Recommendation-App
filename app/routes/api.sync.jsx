@@ -29,13 +29,28 @@ export const action = async ({ request }) => {
 
     total += products.length;
 
+    const aiRes = [];
     for (const product of products) {
+      aiRes.push({
+        product_id: product.id,
+        title: product.title,
+        description: product?.description ?? "",
+        brand: product?.vendor ?? "",
+        category: product?.product_type ?? "",
+        tags: product.tags ?? [],
+        metadata: {},
+      });
       await productSyncQueue.add("product-sync", {
         product,
         shop: session.shop,
         syncJobId: job.id,
       });
     }
+
+    await productSyncQueue.add("ai-sync", {
+      aiRes,
+      shop: session.shop,
+    });
 
     cursor = nextCursor;
 

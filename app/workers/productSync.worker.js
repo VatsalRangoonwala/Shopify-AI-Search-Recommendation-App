@@ -4,7 +4,7 @@ import prisma from "../db.server.js";
 
 const worker = new Worker(
   "product-sync",
-  async job => {
+  async (job) => {
     const { shop } = job.data;
 
     const store = await prisma.store.findUnique({
@@ -37,6 +37,40 @@ const worker = new Worker(
             },
           });
         }
+
+        break;
+      }
+
+      case "ai-sync": {
+        const { aiRes, shop } = job.data;
+
+        await fetch(`${process.env.AI_BASE_URL}/sync/${shop}/products`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(aiRes),
+        }).catch((err) => console.log(err));
+        break;
+      }
+
+      case "track-event": {
+        const { type, productId, sessionId, shop } = job.data;
+
+        const store = await prisma.store.findUnique({
+          where: { shop },
+        });
+
+        if (!store) return;
+
+        await prisma.event.create({
+          data: {
+            storeId: store.id,
+            sessionId,
+            type,
+            productId: productId.toString(),
+          },
+        });
 
         break;
       }
@@ -83,10 +117,10 @@ const worker = new Worker(
   {
     connection: redis,
     concurrency: 5, // 🔥 IMPORTANT for scaling
-  }
+  },
 );
 
-worker.on("completed", job => {
+worker.on("completed", (job) => {
   console.log(`✅ Job done: ${job.name}, Job ID: ${job.id}`);
 });
 

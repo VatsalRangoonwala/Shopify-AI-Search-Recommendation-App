@@ -12,7 +12,7 @@ const shopify = shopifyApp({
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.October25,
   scopes: process.env.SCOPES?.split(","),
-  appUrl: process.env.SHOPIFY_APP_URL || "",
+  appUrl: process.env.APP_URL || "",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
@@ -43,7 +43,7 @@ const shopify = shopifyApp({
         webhookSubscriptionCreate(
           topic: PRODUCTS_CREATE
           webhookSubscription: {
-            callbackUrl: "${process.env.APP_URL}/webhooks/products/create"
+            callbackUrl: "${appUrl}/webhooks/products/create"
             format: JSON
           }
         ) {
@@ -60,7 +60,7 @@ const shopify = shopifyApp({
         webhookSubscriptionCreate(
           topic: PRODUCTS_UPDATE
           webhookSubscription: {
-            callbackUrl: "${process.env.APP_URL}/webhooks/products/update"
+            callbackUrl: "${appUrl}/webhooks/products/update"
             format: JSON
           }
         ) {
@@ -77,7 +77,24 @@ const shopify = shopifyApp({
         webhookSubscriptionCreate(
           topic: PRODUCTS_DELETE
           webhookSubscription: {
-            callbackUrl: "${process.env.APP_URL}/webhooks/products/delete"
+            callbackUrl: "${appUrl}/webhooks/products/delete"
+            format: JSON
+          }
+        ) {
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `);
+
+      await admin.graphql(`
+      mutation {
+        webhookSubscriptionCreate(
+          topic: ORDERS_CREATE
+          webhookSubscription: {
+            callbackUrl: "${appUrl}/webhooks/orders/create"
             format: JSON
           }
         ) {
