@@ -23,21 +23,18 @@ const Sync = () => {
   const progress = total ? Math.round((synced / total) * 100) : 0;
   const isComplete = total > 0 && synced >= total;
 
-
   const startSync = async () => {
     setSyncing(true);
     setSynced(0);
 
     const res = await fetch("/api/sync", {
       method: "POST",
-       headers: {
-        'ngrok-skip-browser-warning': 'true',
+      headers: {
+        "ngrok-skip-browser-warning": "true",
       },
     });
 
     const data = await res.json();
-     console.log(data.jobId);
-     
     setJobId(data.jobId);
   };
 
@@ -51,7 +48,7 @@ const Sync = () => {
       if (!job) return;
 
       setTotal(job.totalProducts || 0);
-      setSynced(job.processedProducts || 0); 
+      setSynced(job.processed || 0);
       if (job.status === "completed") {
         clearInterval(intervalRef.current);
       }
@@ -69,25 +66,27 @@ const Sync = () => {
               Sync Your Products
             </Text>
             <Text variant="bodyMd" tone="subdued">
-              We'll import your product catalog to power AI search and recommendations.
+              We'll import your product catalog to power AI search and
+              recommendations.
             </Text>
           </BlockStack>
 
           {!isComplete && (
-  <Button 
-    variant="primary" 
-    onClick={startSync}
-    loading={syncing}    // This adds the spinner
-    disabled={syncing}   // This prevents double-clicks
-  >
-    {syncing ? "Syncing products..." : "Start Sync"}
-  </Button>
-)}
+            <Button
+              variant="primary"
+              onClick={startSync}
+              loading={syncing} // This adds the spinner
+              disabled={syncing} // This prevents double-clicks
+            >
+              {syncing ? "Syncing products..." : "Start Sync"}
+            </Button>
+          )}
           {syncing && (
             <BlockStack gap="300">
               <ProgressBar progress={progress} size="small" />
               <Text variant="bodySm" tone="subdued">
-                {synced.toLocaleString()} / {total.toLocaleString()} products synced
+                {synced.toLocaleString()} / {total.toLocaleString()} products
+                synced
               </Text>
             </BlockStack>
           )}
@@ -95,7 +94,8 @@ const Sync = () => {
           {isComplete && (
             <BlockStack gap="400">
               <Banner title="Sync complete!" tone="success">
-                All {total.toLocaleString()} products have been synced successfully.
+                All {total.toLocaleString()} products have been synced
+                successfully.
               </Banner>
               <Button
                 variant="primary"

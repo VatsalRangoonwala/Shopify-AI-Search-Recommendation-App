@@ -13,5 +13,11 @@ export const loader = async ({ request }) => {
 
   const analytics = await getAnalytics(store.id);
 
-  return analytics;
+  return {
+    searches: analytics.searches,
+    clicks: analytics.clicks,
+    carts: analytics.carts,
+    purchases: analytics.purchases,
+    conversionRate: analytics.conversionRate,
+  };
 };

@@ -1,11 +1,24 @@
 import React from "react";
 import { Page, Layout, Card, Text, BlockStack, InlineStack, Icon, Box } from "@shopify/polaris";
 import { SearchIcon, TargetIcon, ChartVerticalFilledIcon } from "@shopify/polaris-icons";
+import { useLoaderData } from "react-router";
 
-const stats = [
+export const loader = async ({ request }) => {
+  const res = await fetch(`${process.env.APP_URL}/api/analytics`, {
+    headers: request.headers,
+  });
+  const data = await res.json()
+  return data;
+};
+
+
+const Dashboard = () => {
+  const data = useLoaderData();
+  console.log(data);
+  const stats = [
   {
     title: "Searches",
-    value: "12,847",
+    value: data.searches,
     change: "+14.2%",
     trend: "positive",
     description: "Total searches this month",
@@ -13,7 +26,7 @@ const stats = [
   },
   {
     title: "Recommendation Clicks",
-    value: "3,429",
+    value: data.clicks,
     change: "+8.7%",
     trend: "positive",
     description: "Clicks on AI recommendations",
@@ -21,7 +34,7 @@ const stats = [
   },
   {
     title: "Conversion Boost",
-    value: "23.5%",
+    value: data.conversionRate,
     change: "+3.1%",
     trend: "positive",
     description: "Increase from AI-powered features",
@@ -29,7 +42,6 @@ const stats = [
   },
 ];
 
-const Dashboard = () => {
   return (
     <Page title="Dashboard">
       <Layout>

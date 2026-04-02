@@ -216,7 +216,6 @@ export async function decrementFilterValue(storeId, key, value) {
 }
 
 export async function addProductToFilters(product) {
-  console.log(product.storeId, "here");
   const extracted = extractFilterableValues(product);
 
   for (const [key, values] of Object.entries(extracted)) {
