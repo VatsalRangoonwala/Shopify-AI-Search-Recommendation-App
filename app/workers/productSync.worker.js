@@ -25,8 +25,14 @@ const worker = new Worker(
       case "product-sync": {
         const { product, syncJobId } = job.data;
 
-        await prisma.product.upsert({
-          where: { shopifyProductId: product.shopifyProductId },
+        const updatedProduct = await prisma.product.upsert({
+          where: {
+            // This matches the @@unique([storeId, shopifyProductId]) in your schema
+            storeId_shopifyProductId: {
+              storeId: store.id, // Ensure this variable is not undefined
+              shopifyProductId: product.shopifyProductId, // Ensure this variable is not undefined
+            },
+          },
           update: product,
           create: {
             ...product,
@@ -34,8 +40,7 @@ const worker = new Worker(
           },
         });
 
-        await addProductToFilters(product);
-
+        
         // update progress
         if (syncJobId) {
           await prisma.syncJob.update({
@@ -45,7 +50,8 @@ const worker = new Worker(
             },
           });
         }
-
+        await addProductToFilters(updatedProduct);
+        
         break;
       }
 
@@ -106,14 +112,14 @@ const worker = new Worker(
             storeId: store.id,
           },
         });
-        
+
         const Product = normalizeShopifyProduct(product);
         const newProduct = await prisma.product.update({
           where: { shopifyProductId: product.shopifyProductId.toString() },
           data: Product,
         });
 
-        await updateFiltersForProductChange(oldProduct,newProduct);
+        await updateFiltersForProductChange(oldProduct, newProduct);
 
         break;
       }

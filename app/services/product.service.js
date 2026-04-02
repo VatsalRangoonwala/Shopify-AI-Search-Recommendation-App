@@ -21,7 +21,15 @@ export function parseTagFilter(tag) {
 export function isUsefulMetafield(field) {
   if (!field?.key || !field?.value) return false;
 
-  const badKeys = ["seo_title", "seo_description", "internal_notes"];
+  const badKeys = [
+    "seo_title",
+    "seo_description",
+    "internal_notes",
+    "titleTag",
+    "descriptionTag",
+    "demoInfo",
+    "denominations"
+  ];
 
   return !badKeys.includes(field.key.toLowerCase());
 }
@@ -61,23 +69,16 @@ export function buildProductAttributes(product, variants, metafields) {
   };
 
   // system fields
-  addValue("vendor", product.vendor);
   addValue("productType", product.productType);
 
   // options from variants (best source)
   for (const variant of variants) {
     for (const option of variant.selectedOptions || []) {
-      addValue(option.name, option.value);
+      if(isUsefulMetafield({key:option.name})){
+        addValue(option.name, option.value);
+      }
     }
   }
-
-  // tags like Pattern-Checks or Gender-Men
-  // for (const tag of product.tags || []) {
-  //   const parsed = parseTagFilter(tag);
-  //   if (parsed) {
-  //     addValue(parsed.key, parsed.value);
-  //   }
-  // }
 
   // metafields
   for (const field of metafields) {
@@ -140,17 +141,6 @@ export function normalizeShopifyProduct(product) {
 
     attributes,
     metafields: normalizeMetafields(metafields),
-
-    searchableText: [
-      product.title,
-      product.vendor,
-      product.productType,
-      ...(product.tags || []),
-    ]
-      .filter(Boolean)
-      .join(" "),
-
-    rawData: product,
 
     publishedAt: product.publishedAt ? new Date(product.publishedAt) : null,
     createdAtShopify: product.createdAt ? new Date(product.createdAt) : null,
@@ -224,7 +214,6 @@ export async function fetchProductsBatch(admin, cursor = null) {
                   compareAtPrice
                   availableForSale
                   inventoryQuantity
-                  requiresShipping
                   taxable
                   selectedOptions {
                     name

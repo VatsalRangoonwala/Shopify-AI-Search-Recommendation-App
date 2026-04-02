@@ -57,7 +57,7 @@ export const action = async ({ request }) => {
       data: {
         ...(label !== undefined ? { label: label.trim() } : {}),
         ...(status !== undefined ? { status } : {}),
-        ...(uiType !== undefined ? { uiType } : {})
+        ...(uiType !== undefined ? { uiType } : {}),
       },
       include: {
         values: {
@@ -122,10 +122,10 @@ export const loader = async ({ request }) => {
         orderBy: { productCount: "desc" },
       },
     },
-    orderBy: [{ position: "asc" }, { label: "asc" }],
+    orderBy: [{ label: "asc" }],
   });
 
-  return filters.map((filter) => ({
+  const arr = filters.map((filter) => ({
     id: filter.id,
     key: filter.key,
     label: filter.label,
@@ -140,4 +140,5 @@ export const loader = async ({ request }) => {
       count: v.productCount,
     })),
   }));
+  return { arr };
 };

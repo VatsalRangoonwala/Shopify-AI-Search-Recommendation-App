@@ -1,5 +1,4 @@
 import { useLoaderData } from "react-router";
-import { Card } from "@shopify/polaris";
 
 export const loader = async ({ request }) => {
   const res = await fetch(`${process.env.APP_URL}/api/analytics`, {
@@ -17,25 +16,25 @@ export default function Dashboard() {
       <h1>📊 Analytics Dashboard</h1>
 
       <div style={{ display: "grid", gap: "20px" }}>
-        <Card title="Searches">
+        <div className="Searches">
           <p>{data.searches}</p>
-        </Card>
+        </div>
 
-        <Card title="Recommendation Clicks">
+        <div className="Recommendation Clicks">
           <p>{data.clicks}</p>
-        </Card>
+        </div>
 
-        <Card title="Add to Cart">
+        <div className="Add to Cart">
           <p>{data.carts}</p>
-        </Card>
+        </div>
 
-        <Card title="Purchases">
+        <div className="Purchases">
           <p>{data.purchases}</p>
-        </Card>
+        </div>
 
-        <Card title="Conversion Rate">
+        <div className="Conversion Rate">
           <p>{data.conversionRate}%</p>
-        </Card>
+        </div>
       </div>
     </div>
   );

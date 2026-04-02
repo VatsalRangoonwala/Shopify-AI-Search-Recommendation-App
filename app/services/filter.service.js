@@ -1,6 +1,13 @@
 import prisma from "../db.server.js";
 import { normalizeKey } from "./product.service.js";
 
+export function toLabel(key) {
+  return String(key)
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (str) => str.toUpperCase())
+    .trim();
+}
+
 export function buildFilterQuery(filtersConfig, userFilters) {
   let where = {};
 
@@ -31,7 +38,7 @@ export function buildFilterQuery(filtersConfig, userFilters) {
 }
 
 function guessUiType(key) {
-  const normalized = normalizeFilterKey(key);
+  const normalized = normalizeKey(key);
 
   if (normalized === "price") return "slider";
   if (normalized === "color") return "swatch";
@@ -83,7 +90,10 @@ export function extractFilterableValues(product) {
   add("brand", product.vendor);
   add("productType", product.productType);
 
-  if (product.availableForSale !== null && product.availableForSale !== undefined) {
+  if (
+    product.availableForSale !== null &&
+    product.availableForSale !== undefined
+  ) {
     add("availability", product.availableForSale ? "In Stock" : "Out of Stock");
   }
 
@@ -95,7 +105,7 @@ export function extractFilterableValues(product) {
 
   // convert sets → arrays
   return Object.fromEntries(
-    Object.entries(result).map(([key, values]) => [key, Array.from(values)])
+    Object.entries(result).map(([key, values]) => [key, Array.from(values)]),
   );
 }
 
@@ -122,7 +132,7 @@ export async function ensureFilterExists(storeId, key) {
       sourceField: normalizedKey,
       valueType: normalizedKey === "price" ? "range" : "string",
       uiType: guessUiType(normalizedKey),
-      status: "detected"
+      status: "detected",
     },
   });
 }
@@ -206,10 +216,12 @@ export async function decrementFilterValue(storeId, key, value) {
 }
 
 export async function addProductToFilters(product) {
+  console.log(product.storeId, "here");
   const extracted = extractFilterableValues(product);
 
   for (const [key, values] of Object.entries(extracted)) {
     for (const value of values) {
+
       await incrementFilterValue(product.storeId, key, value);
     }
   }
@@ -239,7 +251,10 @@ export async function refreshFilterCounts(filterId) {
   });
 
   const uniqueCount = values.length;
-  const productCount = values.reduce((max, v) => Math.max(max, v.productCount), 0);
+  const productCount = values.reduce(
+    (max, v) => Math.max(max, v.productCount),
+    0,
+  );
 
   await prisma.filter.update({
     where: { id: filterId },

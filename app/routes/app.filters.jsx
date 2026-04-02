@@ -1,8 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function FiltersPage() {
   const [name, setName] = useState("");
   const [values, setValues] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+
+  useEffect(() => {
+    loadFilter();
+  }, []);
+
+  const loadFilter = async () => {
+    const res = await fetch("/api/admin/filters").catch((err) =>
+      console.log(err),
+    );
+    const data = await res.json();
+    setSuggestions(data.arr);
+  };
 
   const handleSubmit = async () => {
     await fetch("/api/admin/filters", {
@@ -32,6 +45,21 @@ export default function FiltersPage() {
       />
 
       <button onClick={handleSubmit}>Save Filter</button>
+
+      {suggestions?.map((filter) => (
+        <div key={filter.id}>
+          {" "}
+          {/* Always add a key for performance */}
+          <h3 style={{ fontWeight: "bold" }}>{filter.label}</h3>
+          {filter.values?.map((val) => (
+            <div key={val.id} style={{ marginLeft: "10px" }}>
+              <p>
+                {val.value} <span>({val.count})</span>
+              </p>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
