@@ -32,13 +32,13 @@ export const action = async ({ request }) => {
     const aiRes = [];
     for (const product of products) {
       aiRes.push({
-        product_id: product.id,
+        product_id: product.shopifyProductId,
         title: product.title,
         description: product?.description ?? "",
         brand: product?.vendor ?? "",
-        category: product?.product_type ?? "",
+        category: product?.productType ?? "",
         tags: product.tags ?? [],
-        metadata: {},
+        metadata:product?.metafields ?? {},
       });
       await productSyncQueue.add("product-sync", {
         product,

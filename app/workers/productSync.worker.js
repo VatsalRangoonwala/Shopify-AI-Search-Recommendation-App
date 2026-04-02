@@ -1,6 +1,12 @@
 import { Worker } from "bullmq";
 import { redis } from "../config/redis.js";
 import prisma from "../db.server.js";
+import {
+  addProductToFilters,
+  removeProductFromFilters,
+  updateFiltersForProductChange,
+} from "../services/filter.service.js";
+import { normalizeShopifyProduct } from "../services/product.service.js";
 
 const worker = new Worker(
   "product-sync",
@@ -20,13 +26,15 @@ const worker = new Worker(
         const { product, syncJobId } = job.data;
 
         await prisma.product.upsert({
-          where: { id: product.id },
+          where: { shopifyProductId: product.shopifyProductId },
           update: product,
           create: {
             ...product,
             storeId: store.id,
           },
         });
+
+        await addProductToFilters(product);
 
         // update progress
         if (syncJobId) {
@@ -75,27 +83,37 @@ const worker = new Worker(
         break;
       }
 
-      case "webhook-product-create":
+      case "webhook-product-create": {
+        const { product } = job.data;
+
+        const newProduct = normalizeShopifyProduct(product);
+
+        const Product = await prisma.product.create({
+          data: newProduct,
+        });
+
+        await addProductToFilters(Product);
+
+        break;
+      }
+
       case "webhook-product-update": {
         const { product } = job.data;
 
-        await prisma.product.upsert({
-          where: { id: product.id.toString() },
-          update: {
-            title: product.title,
-            description: product.body_html,
-            price: parseFloat(product.variants?.[0]?.price || 0),
-            tags: product.tags?.split(",") || [],
-          },
-          create: {
-            id: product.id.toString(),
+        const oldProduct = await prisma.product.findUnique({
+          where: {
+            shopifyProductId: product.id.toString(),
             storeId: store.id,
-            title: product.title,
-            description: product.body_html,
-            price: parseFloat(product.variants?.[0]?.price || 0),
-            tags: product.tags?.split(",") || [],
           },
         });
+        
+        const Product = normalizeShopifyProduct(product);
+        const newProduct = await prisma.product.update({
+          where: { shopifyProductId: product.shopifyProductId.toString() },
+          data: Product,
+        });
+
+        await updateFiltersForProductChange(oldProduct,newProduct);
 
         break;
       }
@@ -103,9 +121,16 @@ const worker = new Worker(
       case "webhook-product-delete": {
         const { productId } = job.data;
 
+        const product = await prisma.product.findUnique({
+          where: {
+            shopifyProductId: productId.toString(),
+            storeId: store.id,
+          },
+        });
+        await removeProductFromFilters(product);
         await prisma.product.deleteMany({
           where: {
-            id: productId.toString(),
+            shopifyProductId: productId.toString(),
             storeId: store.id,
           },
         });

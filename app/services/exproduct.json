@@ -1,0 +1,158 @@
+{
+  "shopifyGraphqlId": "gid://shopify/Product/8977039425699",
+  "id": "8977039425699",
+
+  "title": "Elisto Micro Checked Dress Pants - Charcoal",
+  "handle": "bsc-elisto-micro-checked-dress-pants-charcoal",
+  "description": ".",
+  "bodyHtml": "<font face=\"Heebo-Regular\">.</font>",
+  "vendor": "Bombay Shirt Company",
+  "productType": "Dress Pants",
+  "tags": [
+    "Color-Grey",
+    "Color_Grey",
+    "Composition family-Poly Elastane",
+    "Composition family_Poly Elastane",
+    "Composition-62% Polyester 34% Viscose 4% Elastane",
+    "Composition_62% Polyester 34% Viscose 4% Elastane",
+    "Construction-Woven",
+    "Construction_Woven",
+    "Mill Country-Others",
+    "Mill Country_Others",
+    "Mills-Others",
+    "Mills_Others",
+    "Nudge-New",
+    "Nudge_New",
+    "Occassion-Business",
+    "Occassion_Business",
+    "Pattern-Checks",
+    "Pattern_Checks",
+    "Primary Fabric Code-FOUEPLCHBL-236",
+    "Primary Fabric Code_FOUEPLCHBL-236",
+    "Primary Fabric Name-Elisto Micro Checked Dress Pants - Charcoal",
+    "Primary Fabric Name_Elisto Micro Checked Dress Pants - Charcoal",
+    "Product Type-Semi-Stitched",
+    "Product Type_Semi-Stitched",
+    "Stretch-Stretchable",
+    "Stretch_Stretchable",
+    "Weave-Plain",
+    "Weave_Plain",
+    "Weight Class-Light",
+    "Weight Class_Light"
+  ],
+  "status": "ACTIVE",
+
+  "minPrice": 4190,
+  "maxPrice": 4190,
+  "compareAtMinPrice": 0,
+  "compareAtMaxPrice": 0,
+
+  "availableForSale": true,
+  "totalInventory": 0,
+
+  "featuredImage": "https://cdn.shopify.com/s/files/1/0536/3594/0515/files/fs_file_1774334432972.webp?v=1774367557",
+
+  "images": [
+    {
+      "id": "gid://shopify/ProductImage/47312829907107",
+      "url": "https://cdn.shopify.com/s/files/1/0536/3594/0515/files/fs_file_1774334432972.webp?v=1774367557",
+      "altText": null,
+      "width": 1200,
+      "height": 1500
+    },
+    {
+      "id": "gid://shopify/ProductImage/47313380901027",
+      "url": "https://cdn.shopify.com/s/files/1/0536/3594/0515/files/fs_file_1774336539016.webp?v=1774367557",
+      "altText": null,
+      "width": 1200,
+      "height": 1500
+    }
+  ],
+
+  "options": [
+    {
+      "id": "gid://shopify/ProductOption/1",
+      "name": "Color",
+      "position": 1,
+      "values": ["Charcoal"]
+    },
+    {
+      "id": "gid://shopify/ProductOption/2",
+      "name": "Size",
+      "position": 2,
+      "values": ["28", "30", "32", "34", "36", "38", "40", "42", "44", "46", "48", "50"]
+    }
+  ],
+
+  "variants": [
+    {
+      "id": "gid://shopify/ProductVariant/46696594833571",
+      "title": "Charcoal / 28",
+      "sku": "BOM-DRE-SE-627-CHARCOAL-28",
+      "barcode": null,
+      "price": "4190.00",
+      "compareAtPrice": "0.00",
+      "availableForSale": false,
+      "inventoryQuantity": 0,
+      "requiresShipping": true,
+      "taxable": true,
+      "selectedOptions": [
+        { "name": "Color", "value": "Charcoal" },
+        { "name": "Size", "value": "28" }
+      ],
+      "image": null,
+      "createdAt": "2025-12-29T10:01:31.000Z",
+      "updatedAt": "2026-04-01T04:10:21.000Z"
+    },
+    {
+      "id": "gid://shopify/ProductVariant/46696594833572",
+      "title": "Charcoal / 30",
+      "sku": "BOM-DRE-SE-627-CHARCOAL-30",
+      "barcode": null,
+      "price": "4190.00",
+      "compareAtPrice": "0.00",
+      "availableForSale": true,
+      "inventoryQuantity": 5,
+      "requiresShipping": true,
+      "taxable": true,
+      "selectedOptions": [
+        { "name": "Color", "value": "Charcoal" },
+        { "name": "Size", "value": "30" }
+      ],
+      "image": null,
+      "createdAt": "2025-12-29T10:01:31.000Z",
+      "updatedAt": "2026-04-01T04:10:21.000Z"
+    }
+  ],
+
+  "metafields": {
+    "custom.gender": "Men",
+    "custom.fabric": "Poly Elastane"
+  },
+
+  "attributes": {
+    "vendor": ["Bombay Shirt Company"],
+    "productType": ["Dress Pants"],
+    "color": ["Charcoal", "Grey"],
+    "size": ["28", "30", "32", "34", "36", "38", "40", "42", "44", "46", "48", "50"],
+    "compositionFamily": ["Poly Elastane"],
+    "composition": ["62% Polyester 34% Viscose 4% Elastane"],
+    "construction": ["Woven"],
+    "millCountry": ["Others"],
+    "mills": ["Others"],
+    "nudge": ["New"],
+    "occassion": ["Business"],
+    "pattern": ["Checks"],
+    "primaryFabricCode": ["FOUEPLCHBL-236"],
+    "primaryFabricName": ["Elisto Micro Checked Dress Pants - Charcoal"],
+    "stretch": ["Stretchable"],
+    "weave": ["Plain"],
+    "weightClass": ["Light"],
+    "gender": ["Men"],
+    "fabric": ["Poly Elastane"]
+  },
+
+  "publishedAt": "2026-03-24T15:34:46.000Z",
+  "createdAtShopify": "2025-12-29T10:01:31.000Z",
+  "updatedAtShopify": "2026-04-01T04:10:21.000Z"
+}

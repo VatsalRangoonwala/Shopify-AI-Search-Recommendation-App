@@ -34,36 +34,109 @@ model Store {
   createdAt   DateTime @default(now())
 
   products Product[]
-  filters  Filter[]
   sorting  Sorting[]
   events   Event[]
   syncJobs SyncJob[]
+  filters  Filter[]
+  filterValues    FilterValue[]
 }
 
 model Product {
-  id          String   @id
-  storeId     String
-  title       String
-  description String?
-  price       Float
-  tags        String[]
-  createdAt   DateTime @default(now())
+  id                 String    @id @default(cuid())
+  storeId            String
 
-  store Store @relation(fields: [storeId], references: [id])
+  shopifyGraphqlId   String
+  shopifyProductId   String
+
+  handle             String?
+  title              String
+  description        String?
+  bodyHtml           String?
+  vendor             String?
+  productType        String?
+  status             String?
+
+  tags               String[]
+  
+  minPrice           Float?
+  maxPrice           Float?
+  compareAtMinPrice  Float?
+  compareAtMaxPrice  Float?
+
+  availableForSale   Boolean?
+  totalInventory     Int?
+
+  featuredImage      String?
+  images             Json?
+
+  options            Json?
+  variants           Json?
+
+  attributes         Json?
+  metafields         Json?
+
+  publishedAt        DateTime?
+  createdAtShopify   DateTime?
+  updatedAtShopify   DateTime?
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  store              Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, shopifyProductId])
+  @@index([storeId])
+  @@index([storeId, vendor])
+  @@index([storeId, productType])
 }
 
 model Filter {
-  id       String  @id @default(cuid())
-  storeId  String
-  name     String
-  field    String
-  type     String
-  uiType   String
-  values   Json
-  position Int
-  isActive Boolean @default(true)
+  id            String   @id @default(cuid())
+  storeId       String
 
-  store Store @relation(fields: [storeId], references: [id])
+  key           String
+  label         String
+
+  source        String
+  sourceField   String?
+
+  valueType     String?   // string, number, range, boolean
+  uiType        String?   // checkbox, swatch, slider, dropdown
+
+  status        String    @default("detected") // detected, selected, disabled
+
+  productCount  Int?      // total products having this filter
+  uniqueCount   Int?      // total unique values
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  store         Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  values        FilterValue[]
+
+  @@unique([storeId, key])
+  @@index([storeId])
+  @@index([storeId, status])
+}
+
+model FilterValue {
+  id            String   @id @default(cuid())
+  storeId       String
+  filterId      String
+
+  value         String
+  normalized    String   // lowercase/slug version for uniqueness
+  productCount  Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  filter        Filter   @relation(fields: [filterId], references: [id], onDelete: Cascade)
+
+  @@unique([filterId, normalized])
+  @@index([storeId])
+  @@index([filterId])
 }
 
 model Sorting {
