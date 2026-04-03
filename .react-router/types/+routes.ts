@@ -73,6 +73,30 @@ type Pages = {
   "/app": {
     params: {};
   };
+  "/app/onboarding/storefront": {
+    params: {};
+  };
+  "/app/onboarding/complete": {
+    params: {};
+  };
+  "/app/onboarding/filters": {
+    params: {};
+  };
+  "/app/onboarding/sorting": {
+    params: {};
+  };
+  "/app/onboarding/welcome": {
+    params: {};
+  };
+  "/app/onboarding": {
+    params: {};
+  };
+  "/app/onboarding/sync": {
+    params: {};
+  };
+  "/app/onboarding/ai": {
+    params: {};
+  };
   "/app/additional": {
     params: {};
   };
@@ -87,7 +111,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/webhooks/orders/create" | "/api/recommendations" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/additional" | "/app/dashboard" | "/app/filters";
+    page: "/" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/webhooks/orders/create" | "/api/recommendations" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/filters";
   };
   "routes/webhooks.app.scopes_update.jsx": {
     id: "routes/webhooks.app.scopes_update";
@@ -167,7 +191,39 @@ type RouteFiles = {
   };
   "routes/app.jsx": {
     id: "routes/app";
-    page: "/app" | "/app/additional" | "/app/dashboard" | "/app/filters";
+    page: "/app" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/filters";
+  };
+  "routes/app.onboarding.storefront.jsx": {
+    id: "routes/app.onboarding.storefront";
+    page: "/app/onboarding/storefront";
+  };
+  "routes/app.onboarding.complete.jsx": {
+    id: "routes/app.onboarding.complete";
+    page: "/app/onboarding/complete";
+  };
+  "routes/app.onboarding.filters.jsx": {
+    id: "routes/app.onboarding.filters";
+    page: "/app/onboarding/filters";
+  };
+  "routes/app.onboarding.sorting.jsx": {
+    id: "routes/app.onboarding.sorting";
+    page: "/app/onboarding/sorting";
+  };
+  "routes/app.onboarding.welcome.jsx": {
+    id: "routes/app.onboarding.welcome";
+    page: "/app/onboarding/welcome";
+  };
+  "routes/app.onboarding._index.jsx": {
+    id: "routes/app.onboarding._index";
+    page: "/app/onboarding";
+  };
+  "routes/app.onboarding.sync.jsx": {
+    id: "routes/app.onboarding.sync";
+    page: "/app/onboarding/sync";
+  };
+  "routes/app.onboarding.ai.jsx": {
+    id: "routes/app.onboarding.ai";
+    page: "/app/onboarding/ai";
   };
   "routes/app.additional.jsx": {
     id: "routes/app.additional";
@@ -209,6 +265,14 @@ type RouteModules = {
   "routes/_index": typeof import("./app/routes/_index/route.jsx");
   "routes/auth.$": typeof import("./app/routes/auth.$.jsx");
   "routes/app": typeof import("./app/routes/app.jsx");
+  "routes/app.onboarding.storefront": typeof import("./app/routes/app.onboarding.storefront.jsx");
+  "routes/app.onboarding.complete": typeof import("./app/routes/app.onboarding.complete.jsx");
+  "routes/app.onboarding.filters": typeof import("./app/routes/app.onboarding.filters.jsx");
+  "routes/app.onboarding.sorting": typeof import("./app/routes/app.onboarding.sorting.jsx");
+  "routes/app.onboarding.welcome": typeof import("./app/routes/app.onboarding.welcome.jsx");
+  "routes/app.onboarding._index": typeof import("./app/routes/app.onboarding._index.jsx");
+  "routes/app.onboarding.sync": typeof import("./app/routes/app.onboarding.sync.jsx");
+  "routes/app.onboarding.ai": typeof import("./app/routes/app.onboarding.ai.jsx");
   "routes/app.additional": typeof import("./app/routes/app.additional.jsx");
   "routes/app.dashboard": typeof import("./app/routes/app.dashboard.jsx");
   "routes/app.filters": typeof import("./app/routes/app.filters.jsx");

@@ -24,7 +24,7 @@ export const action = async ({ request }) => {
       prisma.filter.findMany({
         where: {
           storeId: store.id,
-          isActive: true,
+          status:"detected"
         },
       }),
       prisma.sorting.findMany({
@@ -61,7 +61,7 @@ export const action = async ({ request }) => {
         products = await prisma.product.findMany({
           where: {
             storeId: store.id,
-            ...filterQuery,
+            ...filterQuer 
           },
           orderBy: sortingQuery,
           take: 50,
