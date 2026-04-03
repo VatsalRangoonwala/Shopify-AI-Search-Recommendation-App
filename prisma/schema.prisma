@@ -40,7 +40,6 @@ model Store {
   events   Event[]
   syncJobs SyncJob[]
   filters  Filter[]
-  filterValues    FilterValue[]
 }
 
 model Product {
