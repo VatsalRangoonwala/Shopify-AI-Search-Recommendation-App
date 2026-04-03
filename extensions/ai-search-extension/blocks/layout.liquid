@@ -1,0 +1,691 @@
+<div class="ecom-discovery-wrapper">
+  <aside class="ecom-sidebar">
+    <div class="ecom-sidebar-header">
+      <h3>{{ section.settings.filter_title }}</h3>
+    </div>
+    <div id="ecom-filters-root" class="ecom-filters-container"></div>
+  </aside>
+
+  <main class="ecom-main">
+    <div class="ecom-toolbar">
+      <div class="ecom-search-box">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="search-input" placeholder="Search for products...">
+      </div>
+      <div class="ecom-sort-box">
+        <label for="ai-sorting-select">{{ section.settings.sorting_label }}</label>
+        <select id="ai-sorting-select" class="ecom-select"></select>
+      </div>
+    </div>
+
+    <section class="ecom-section">
+      <h2 class="ecom-section-title">{{ section.settings.products_title }}</h2>
+      <div id="ai-products-grid" class="ecom-product-grid"></div>
+    </section>
+
+    <section class="ecom-section ecom-recommendations">
+      <h2 class="ecom-section-title">{{ section.settings.recommendations_title }}</h2>
+      <div id="ai-recommendations-grid" class="ecom-product-grid"></div>
+    </section>
+  </main>
+</div>
+
+<style>
+  /* --- Modern E-commerce CSS Variables --- */
+  :root {
+    --color-primary: #000000;
+    --color-secondary: #ffffff;
+    --color-text-main: #121212;
+    --color-text-light: #757575;
+    --color-border: #e0e0e0;
+    --color-bg-light: #f9f9f9;
+    --color-sale: #d90429;
+    --color-stars: #ffb800;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --transition: all 0.3s ease;
+  }
+
+  /* --- Layout --- */
+  .ecom-discovery-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  @media (min-width: 768px) {
+    .ecom-discovery-wrapper {
+      flex-direction: row;
+    }
+  }
+
+  /* --- Sidebar --- */
+  .ecom-sidebar {
+    width: 100%;
+    flex-shrink: 0;
+  }
+  @media (min-width: 768px) {
+    .ecom-sidebar {
+      width: 260px;
+    }
+  }
+
+  .ecom-sidebar-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .ecom-filter-group {
+    margin-bottom: 24px;
+  }
+  .ecom-filter-group strong {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-main);
+  }
+  .ecom-filter-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--color-text-light);
+  }
+  .ecom-filter-group input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+  }
+
+  /* --- Main Content & Toolbar --- */
+  .ecom-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ecom-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 30px;
+    padding: 16px;
+    background-color: var(--color-bg-light);
+    border-radius: var(--radius-md);
+  }
+
+  .ecom-search-box {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    flex: 1;
+    min-width: 250px;
+  }
+  .ecom-search-box svg {
+    color: var(--color-text-light);
+    margin-right: 8px;
+  }
+  .ecom-search-box input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 0.95rem;
+  }
+
+  .ecom-sort-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ecom-select {
+    padding: 8px 32px 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: #fff;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  /* --- Product Grid & Cards --- */
+  .ecom-section {
+    margin-bottom: 60px;
+  }
+  .ecom-section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: var(--color-text-main);
+  }
+
+  .ecom-product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  @media (min-width: 992px) {
+    .ecom-product-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+  }
+  @media (min-width: 1200px) {
+    .ecom-product-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .ecom-card {
+    display: flex;
+    flex-direction: column;
+    group: relative;
+    background: #fff;
+    transition: var(--transition);
+  }
+  .ecom-card:hover .ecom-card-image img {
+    transform: scale(1.05);
+  }
+
+  .ecom-card-image-wrapper {
+    position: relative;
+    aspect-ratio: 4/5;
+    overflow: hidden;
+    background-color: var(--color-bg-light);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+  }
+  .ecom-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  .ecom-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--color-sale);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+  }
+
+  .ecom-card-vendor {
+    font-size: 0.75rem;
+    color: var(--color-text-light);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .ecom-card-title {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-text-main);
+    margin: 0 0 8px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ecom-card-rating {
+    color: var(--color-stars);
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+  }
+  .ecom-card-rating span {
+    color: var(--color-text-light);
+    margin-left: 4px;
+  }
+
+  .ecom-card-price {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+  }
+  .ecom-price-compare {
+    text-decoration: line-through;
+    color: var(--color-text-light);
+    font-size: 0.9rem;
+    font-weight: 400;
+  }
+
+  .ecom-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+  }
+  .btn-primary,
+  .btn-secondary {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-primary {
+    background: var(--color-primary);
+    color: var(--color-secondary);
+    border: 1px solid var(--color-primary);
+  }
+  .btn-primary:hover {
+    background: #333;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
+  }
+  .btn-secondary:hover {
+    border-color: var(--color-primary);
+  }
+</style>
+
+<script>
+  // --- Shared Utilities & Tracking ---
+  function getOrCreateSessionId() {
+    let sessionId = localStorage.getItem('ai_session_id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem('ai_session_id', sessionId);
+    }
+    return sessionId;
+  }
+
+  async function trackEvent(type, productId) {
+    try {
+      const sessionId = getOrCreateSessionId();
+      await fetch('/apps/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, productId, sessionId, shop: Shopify.shop }),
+      });
+    } catch (err) {
+      console.error('Tracking failed', err);
+    }
+  }
+
+  // --- HTML Generator for Product Cards ---
+  function createProductCardHTML(p) {
+    const comparePriceHtml = p.compareAtMaxPrice ? `<span class="ecom-price-compare">${p.compareAtMaxPrice}</span>` : '';
+    const badgeHtml = p.badge ? `<span class="ecom-badge">${p.badge}</span>` : '';
+    const stars = '★'.repeat(Math.round(p.rating)) + '☆'.repeat(5 - Math.round(p.rating));
+
+    return `
+      <div class="ecom-card-image-wrapper">
+        ${badgeHtml}
+        <div class="ecom-card-image">
+          <img src="${p.featuredImage}" alt="${p.title}" loading="lazy">
+        </div>
+      </div>
+      <div class="ecom-card-info">
+        <div class="ecom-card-vendor">${p.vendor}</div>
+        <h3 class="ecom-card-title">${p.title}</h3>
+        <div class="ecom-card-rating">${stars} <span>(${p.reviews})</span></div>
+        <div class="ecom-card-price">
+          <span class="ecom-price-regular">${p.maxPrice}</span>
+          ${comparePriceHtml}
+        </div>
+        <div class="ecom-card-actions">
+          <button class="btn-primary add-btn" data-id="${p.id}">Add to Cart</button>
+          <button class="btn-secondary rec-btn" data-id="${p.id}">Details</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- Initial Data Loaders (Filters & Sorting) ---
+  async function loadFiltersAndSorting(shop) {
+    try {
+      // KEEPING API CALLS AS REQUESTED
+      const [filtersRes, sortingRes] = await Promise.all([
+        fetch(`/apps/api/filters?shop=${shop}`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+        fetch(`/apps/api/sorting?shop=${shop}`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+      ]);
+
+      const filters = await filtersRes.json();
+      const sorting = await sortingRes.json();
+
+      // HARDCODED DUMMY FILTERS FOR UI PREVIEW
+      const dummyFilters = [
+        { name: 'Category', values: ['Electronics', 'Clothing', 'Home & Garden', 'Accessories'] },
+        { name: 'Brand', values: ['Apple', 'Nike', 'Samsung', 'Sony'] },
+        { name: 'Price Range', values: ['Under ₹1000', '₹1000 - ₹5000', 'Over ₹5000'] },
+      ];
+      const dummySorting = [
+        { name: 'best_selling', label: 'Best Selling' },
+        { name: 'price_asc', label: 'Price: Low to High' },
+        { name: 'price_desc', label: 'Price: High to Low' },
+        { name: 'newest', label: 'Newest Arrivals' },
+      ];
+
+      // Render Filters using Dummy Data
+      const filterContainer = document.getElementById('ecom-filters-root');
+      filters.forEach((filter) => {
+        const group = document.createElement('div');
+        group.className = 'ecom-filter-group';
+        let html = `<strong>${filter.label}</strong>`;
+        filter.values.forEach((val) => {
+          html += `<label><input type="checkbox" data-filter="${filter.key}" value="${val}" /> ${val}</label>`;
+        });
+        group.innerHTML = html;
+        filterContainer.appendChild(group);
+      });
+
+      // Render Sorting using Dummy Data
+      const select = document.getElementById('ai-sorting-select');
+      sorting.forEach((option) => {
+        const opt = document.createElement('option');
+        opt.value = option.name;
+        opt.textContent = option.label;
+        select.appendChild(opt);
+      });
+    } catch (err) {
+      console.error('Failed to load filters or sorting:', err);
+    }
+  }
+
+  // --- Dynamic Fetchers (Products & Recommendations) ---
+  async function fetchProducts() {
+    const shop = '{{ shop.domain }}';
+    const query = document.getElementById('search-input')?.value || '';
+
+    if (query && query.trim().length > 0) trackEvent('search', query);
+
+    const filters = {};
+    document.querySelectorAll('input[type=checkbox]:checked').forEach((input) => {
+      const key = input.dataset.filter;
+      if (!filters[key]) filters[key] = [];
+      filters[key].push(input.value);
+    });
+    const sort = document.getElementById('ai-sorting-select')?.value;
+
+    try {
+      // THE ACTUAL API CALL REMAINS INTACT
+      const res = await fetch(`/apps/api/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({ shop, filters, sort, query }),
+      });
+      const products = await res.json(); // <-- Uncomment this when API returns full data
+
+      // --- HARDCODED DUMMY PRODUCT DATA ---
+      const dummyProducts = [
+        {
+          id: '1',
+          title: 'Premium Noise-Cancelling Headphones',
+          vendor: 'AudioTech',
+          price: '₹4,999',
+          compareAtPrice: '₹7,999',
+          rating: 4.8,
+          reviews: 124,
+          badge: 'Sale',
+          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80',
+        },
+        {
+          id: '2',
+          title: 'Minimalist Ceramic Coffee Mug',
+          vendor: 'HomeGoods',
+          price: '₹499',
+          compareAtPrice: null,
+          rating: 4.2,
+          reviews: 45,
+          badge: null,
+          image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=500&q=80',
+        },
+        {
+          id: '3',
+          title: 'Smart Fitness Tracker Watch',
+          vendor: 'FitPulse',
+          price: '₹2,499',
+          compareAtPrice: '₹3,999',
+          rating: 4.5,
+          reviews: 89,
+          badge: 'Bestseller',
+          image: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500&q=80',
+        },
+        {
+          id: '4',
+          title: 'Organic Cotton T-Shirt',
+          vendor: 'EcoWear',
+          price: '₹899',
+          compareAtPrice: '₹1,299',
+          rating: 4.0,
+          reviews: 210,
+          badge: null,
+          image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&q=80',
+        },
+        {
+          id: '5',
+          title: 'Professional DSLR Camera',
+          vendor: 'OpticsPro',
+          price: '₹45,999',
+          compareAtPrice: null,
+          rating: 4.9,
+          reviews: 32,
+          badge: 'New',
+          image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80',
+        },
+        {
+          id: '6',
+          title: 'Leather Messenger Bag',
+          vendor: 'Craftsmen',
+          price: '₹3,499',
+          compareAtPrice: '₹4,999',
+          rating: 4.7,
+          reviews: 76,
+          badge: 'Sale',
+          image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&q=80',
+        },
+      ];
+
+      const grid = document.getElementById('ai-products-grid');
+      grid.innerHTML = '';
+
+      // Loop through dummy data (swap dummyProducts for products later)
+      products.forEach((p) => {
+        const card = document.createElement('div');
+        card.className = 'ecom-card';
+        card.innerHTML = createProductCardHTML(p);
+
+        // Event Listeners
+        card.addEventListener('click', () => trackEvent('view', p.id));
+        card.querySelector('.add-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          trackEvent('add_to_cart', p.id);
+        });
+        card.querySelector('.rec-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          trackEvent('recommendation_click', p.id);
+        });
+
+        grid.appendChild(card);
+      });
+    } catch (err) {
+      console.error('Product fetch failed:', err);
+    }
+  }
+
+  async function loadRecommendations(shop) {
+    const sessionId = getOrCreateSessionId();
+    try {
+      // THE ACTUAL API CALL REMAINS INTACT
+      const res = await fetch('/apps/api/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop, sessionId }),
+      });
+      const products = await res.json(); // <-- Uncomment this when API returns full data
+
+      // --- HARDCODED DUMMY REC DATA ---
+      const dummyRecommendations = [
+        {
+          id: '7',
+          title: 'Wireless Charging Pad',
+          vendor: 'TechGear',
+          price: '₹1,299',
+          compareAtPrice: '₹1,999',
+          rating: 4.6,
+          reviews: 42,
+          badge: 'Recommended',
+          image: 'https://images.unsplash.com/photo-1586816879360-004f5b0c51e3?w=500&q=80',
+        },
+        {
+          id: '8',
+          title: 'Aromatherapy Essential Oil Diffuser',
+          vendor: 'ZenHome',
+          price: '₹1,899',
+          compareAtPrice: null,
+          rating: 4.4,
+          reviews: 112,
+          badge: null,
+          image: 'https://images.unsplash.com/photo-1608528577891-eb055944f2e7?w=500&q=80',
+        },
+        {
+          id: '9',
+          title: 'Polarized Sunglasses',
+          vendor: 'SunShade',
+          price: '₹2,199',
+          compareAtPrice: '₹3,499',
+          rating: 4.8,
+          reviews: 67,
+          badge: 'Sale',
+          image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=500&q=80',
+        },
+        {
+          id: '10',
+          title: 'Stainless Steel Water Bottle',
+          vendor: 'HydroLife',
+          price: '₹899',
+          compareAtPrice: null,
+          rating: 4.3,
+          reviews: 205,
+          badge: null,
+          image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&q=80',
+        },
+      ];
+
+      const container = document.getElementById('ai-recommendations-grid');
+      container.innerHTML = '';
+
+      // Loop through dummy data
+      products.forEach((p) => {
+        const card = document.createElement('div');
+        card.className = 'ecom-card';
+        card.innerHTML = createProductCardHTML(p);
+
+        card.addEventListener('click', () => trackEvent('recommendation_click', p.id));
+        card.querySelector('.add-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          trackEvent('add_to_cart', p.id);
+        });
+
+        container.appendChild(card);
+      });
+    } catch (err) {
+      console.error('Recommendations fetch failed:', err);
+    }
+  }
+
+  // --- Initialization & Event Listeners ---
+  document.addEventListener('DOMContentLoaded', async () => {
+    const shop = '{{ shop.domain }}';
+    await loadFiltersAndSorting(shop);
+    fetchProducts();
+    loadRecommendations(shop);
+  });
+
+  // Re-fetch products when filters, sorting, or search changes
+  document.addEventListener('change', (e) => {
+    if (
+      e.target.matches('input[type="checkbox"]') ||
+      e.target.id === 'ai-sorting-select' ||
+      e.target.id === 'search-input'
+    ) {
+      fetchProducts();
+    }
+  });
+</script>
+
+{% schema %}
+{
+  "name": "AI Discovery Engine",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Filters Settings"
+    },
+    {
+      "type": "text",
+      "id": "filter_title",
+      "label": "Filters Heading",
+      "default": "Filters"
+    },
+    {
+      "type": "header",
+      "content": "Sorting Settings"
+    },
+    {
+      "type": "text",
+      "id": "sorting_label",
+      "label": "Sorting Label",
+      "default": "Sort By"
+    },
+    {
+      "type": "header",
+      "content": "Product Grid Settings"
+    },
+    {
+      "type": "text",
+      "id": "products_title",
+      "label": "Products Heading",
+      "default": "All Products"
+    },
+    {
+      "type": "header",
+      "content": "Recommendations Settings"
+    },
+    {
+      "type": "text",
+      "id": "recommendations_title",
+      "label": "Recommendations Heading",
+      "default": "Recommended for you"
+    }
+  ]
+}
+{% endschema %}
