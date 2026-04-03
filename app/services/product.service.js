@@ -19,19 +19,65 @@ export function parseTagFilter(tag) {
 }
 
 export function isUsefulMetafield(field) {
-  if (!field?.key || !field?.value) return false;
+  if (!field?.key || field?.value === null || field?.value === undefined) {
+    return false;
+  }
 
-  const badKeys = [
-    "seo_title",
-    "seo_description",
-    "internal_notes",
-    "titleTag",
-    "descriptionTag",
-    "demoInfo",
-    "denominations"
+  const allowedMetafieldKeys = [
+    "material",
+    "fabric",
+    "occasion",
+    "gender",
+    "pattern",
+    "finish",
+    "sleeve_type",
+    "fit",
+    "neck_type",
+    "skin_type",
+    "hair_type",
+    "compatibility",
+    "device_type",
+    "usage",
+    "feature",
+    "origin",
+    "collection_style",
   ];
 
-  return !badKeys.includes(field.key.toLowerCase());
+  const normalizedKey = normalizeKey(field.key);
+  const value = String(field.value).trim();
+
+  if (!allowedMetafieldKeys.includes(normalizedKey)) {
+    return false;
+  }
+
+  if (!value || value.length > 60) {
+    return false;
+  }
+
+  return true;
+}
+
+export function isUsefulOption(name, value) {
+  if (!name || !value) return false;
+
+  const allowedOptionKeys = [
+    "color",
+    "size",
+    "material",
+    "style",
+    "fit",
+    "length",
+    "capacity",
+    "flavor",
+    "scent",
+    "finish",
+    "pattern",
+    "pack size",
+  ];
+
+  const normalizedName = normalizeKey(name);
+
+  return allowedOptionKeys.includes(normalizedName);
 }
 
 export function normalizeKey(key) {
@@ -74,7 +120,7 @@ export function buildProductAttributes(product, variants, metafields) {
   // options from variants (best source)
   for (const variant of variants) {
     for (const option of variant.selectedOptions || []) {
-      if(isUsefulMetafield({key:option.name})){
+      if (isUsefulOption(option.name, option.value)) {
         addValue(option.name, option.value);
       }
     }

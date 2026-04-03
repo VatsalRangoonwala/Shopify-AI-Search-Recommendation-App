@@ -3,6 +3,7 @@ import { redis } from "../config/redis.js";
 import prisma from "../db.server.js";
 import {
   addProductToFilters,
+  generateStoreFilters,
   removeProductFromFilters,
   updateFiltersForProductChange,
 } from "../services/filter.service.js";
@@ -25,7 +26,7 @@ const worker = new Worker(
       case "product-sync": {
         const { product, syncJobId } = job.data;
 
-        const updatedProduct = await prisma.product.upsert({
+        await prisma.product.upsert({
           where: {
             // This matches the @@unique([storeId, shopifyProductId]) in your schema
             storeId_shopifyProductId: {
@@ -40,7 +41,6 @@ const worker = new Worker(
           },
         });
 
-        
         // update progress
         if (syncJobId) {
           await prisma.syncJob.update({
@@ -50,8 +50,7 @@ const worker = new Worker(
             },
           });
         }
-        await addProductToFilters(updatedProduct);
-        
+
         break;
       }
 
@@ -65,6 +64,13 @@ const worker = new Worker(
           },
           body: JSON.stringify(aiRes),
         }).catch((err) => console.log(err));
+        break;
+      }
+
+      case "filter-sync": {
+        const { shop } = job.data;
+        await generateStoreFilters(shop);
+
         break;
       }
 

@@ -31,6 +31,8 @@ model Store {
   id          String   @id @default(cuid())
   shop        String   @unique
   accessToken String
+  isOnboarding  Boolean @default(true)
+  diversity   Float    @default(0.0)
   createdAt   DateTime @default(now())
 
   products Product[]
@@ -94,49 +96,31 @@ model Filter {
   id            String   @id @default(cuid())
   storeId       String
 
-  key           String
-  label         String
+  key           String   
+  label         String   
 
-  source        String
-  sourceField   String?
+  source        String   // system, option, tag, metafield
+  sourceField   String?  // vendor, productType, tags, metafields
 
-  valueType     String?   // string, number, range, boolean
-  uiType        String?   // checkbox, swatch, slider, dropdown
+  values        String[] // all unique values
+  productCount  Int?     // how many products contain this filter
+  uniqueCount   Int?     // how many unique values
 
-  status        String    @default("detected") // detected, selected, disabled
+  valueType     String?  // string, number, range
+  uiType        String?  // checkbox, dropdown, swatch, slider
 
-  productCount  Int?      // total products having this filter
-  uniqueCount   Int?      // total unique values
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  store         Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  values        FilterValue[]
-
-  @@unique([storeId, key])
-  @@index([storeId])
-  @@index([storeId, status])
-}
-
-model FilterValue {
-  id            String   @id @default(cuid())
-  storeId       String
-  filterId      String
-
-  value         String
-  normalized    String   // lowercase/slug version for uniqueness
-  productCount  Int      @default(0)
+  status        String   @default("detected") // detected, selected, disabled
+  position      Int      @default(0)
+  isVisible     Boolean  @default(true)
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  filter        Filter   @relation(fields: [filterId], references: [id], onDelete: Cascade)
 
-  @@unique([filterId, normalized])
+  @@unique([storeId, key])
   @@index([storeId])
-  @@index([filterId])
+  @@index([storeId, status])
 }
 
 model Sorting {

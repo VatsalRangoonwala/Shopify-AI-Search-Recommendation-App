@@ -14,7 +14,7 @@ export default function FiltersPage() {
       console.log(err),
     );
     const data = await res.json();
-    setSuggestions(data.arr);
+    setSuggestions(data.filters);
   };
 
   const handleSubmit = async () => {

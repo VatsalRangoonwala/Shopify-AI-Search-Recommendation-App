@@ -9,22 +9,10 @@ export const action = async ({ request }) => {
     const { session } = await authenticate.admin(request);
     const body = await request.json();
 
-    const { filterId, label, status, uiType } = body;
+    const { filterIds } = body;
 
-    if (!filterId) {
-      return jsonError("filterId is required", 400);
-    }
-
-    if (status && !ALLOWED_STATUS.includes(status)) {
-      return jsonError("Invalid status value", 400);
-    }
-
-    if (uiType && !ALLOWED_UI_TYPES.includes(uiType)) {
-      return jsonError("Invalid uiType value", 400);
-    }
-
-    if (label !== undefined && typeof label !== "string") {
-      return jsonError("label must be a string", 400);
+    if (filterIds.length == 0) {
+      return jsonError("filters are required", 400);
     }
 
     const store = await prisma.store.findUnique({
@@ -36,40 +24,32 @@ export const action = async ({ request }) => {
       return jsonError("Store not found", 404);
     }
 
-    const existingFilter = await prisma.filter.findFirst({
+    const existingFilter = await prisma.filter.findMany({
       where: {
-        id: filterId,
         storeId: store.id,
-      },
-      include: {
-        values: {
-          orderBy: { productCount: "desc" },
+        id: {
+          in: filterIds,
         },
+      },
+      select: {
+        id: true,
       },
     });
 
-    if (!existingFilter) {
-      return jsonError("Filter not found", 404);
+    if (existingFilter.length == 0) {
+      return jsonError("Filters not found", 404);
     }
 
-    const updatedFilter = await prisma.filter.update({
-      where: { id: filterId },
+    const updatedFilter = await prisma.filter.updateMany({
+      where: { id: { in: filterIds } },
       data: {
-        ...(label !== undefined ? { label: label.trim() } : {}),
-        ...(status !== undefined ? { status } : {}),
-        ...(uiType !== undefined ? { uiType } : {}),
-      },
-      include: {
-        values: {
-          orderBy: { productCount: "desc" },
-        },
+        status: "selected",
       },
     });
 
     return new Response(
       JSON.stringify({
         success: true,
-        filter: formatFilterResponse(updatedFilter),
       }),
       {
         status: 200,
@@ -82,24 +62,24 @@ export const action = async ({ request }) => {
   }
 };
 
-function formatFilterResponse(filter) {
-  return {
-    id: filter.id,
-    key: filter.key,
-    label: filter.label,
-    status: filter.status,
-    uiType: filter.uiType,
-    isVisible: filter.isVisible,
-    position: filter.position,
-    uniqueCount: filter.uniqueCount,
-    productCount: filter.productCount,
-    values: filter.values.map((v) => ({
-      id: v.id,
-      value: v.value,
-      count: v.productCount,
-    })),
-  };
-}
+// function formatFilterResponse(filter) {
+//   return {
+//     id: filter.id,
+//     key: filter.key,
+//     label: filter.label,
+//     status: filter.status,
+//     uiType: filter.uiType,
+//     isVisible: filter.isVisible,
+//     position: filter.position,
+//     uniqueCount: filter.uniqueCount,
+//     productCount: filter.productCount,
+//     values: filter.values.map((v) => ({
+//       id: v.id,
+//       value: v.value,
+//       count: v.productCount,
+//     })),
+//   };
+// }
 
 function jsonError(message, status = 400) {
   return new Response(JSON.stringify({ success: false, error: message }), {
@@ -117,28 +97,8 @@ export const loader = async ({ request }) => {
 
   const filters = await prisma.filter.findMany({
     where: { storeId: store.id },
-    include: {
-      values: {
-        orderBy: { productCount: "desc" },
-      },
-    },
     orderBy: [{ label: "asc" }],
   });
 
-  const arr = filters.map((filter) => ({
-    id: filter.id,
-    key: filter.key,
-    label: filter.label,
-    status: filter.status,
-    uiType: filter.uiType,
-    source: filter.source,
-    productCount: filter.productCount,
-    uniqueCount: filter.uniqueCount,
-    values: filter.values.map((v) => ({
-      id: v.id,
-      value: v.value,
-      count: v.productCount,
-    })),
-  }));
-  return { arr };
+  return { filters };
 };
