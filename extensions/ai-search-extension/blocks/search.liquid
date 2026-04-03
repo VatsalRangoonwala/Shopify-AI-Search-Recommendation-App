@@ -82,6 +82,7 @@
     }).catch((err) => console.log('err:', err));
 
     const products = await res.json();
+    console.log(products,"herte")
 
     const grid = document.getElementById('ai-products-grid');
     grid.innerHTML = '';
@@ -92,7 +93,7 @@
 
       card.innerHTML = `
       <h4>${p.title}</h4>
-      <p>₹ ${p.price}</p>
+      <p>₹ ${p.maxPrice}</p>
       <button data-id="${p.id}">Add to Cart</button>
       <button class="rec-btn" data-id="${p.id}">View Product</button>
     `;
