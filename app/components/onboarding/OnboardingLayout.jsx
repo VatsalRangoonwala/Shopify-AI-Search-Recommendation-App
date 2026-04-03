@@ -6,6 +6,7 @@ import StepIndicator from "./StepIndicator.jsx";
 
 const STEPS = [
   { label: "Welcome", path: "/app/onboarding/welcome" },
+  { label: "Data Quality", path: "/app/onboarding/data-quality" },
   { label: "Sync", path: "/app/onboarding/sync" },
   { label: "Filters", path: "/app/onboarding/filters" },
   { label: "Sorting", path: "/app/onboarding/sorting" },

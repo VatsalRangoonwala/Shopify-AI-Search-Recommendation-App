@@ -5,6 +5,7 @@ import enTranslations from "@shopify/polaris/locales/en.json";
 import "@shopify/polaris/build/esm/styles.css";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
+import AppLayout from "../components/layout/AppLayout.jsx";
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
@@ -15,21 +16,11 @@ export default function App() {
   const { apiKey } = useLoaderData();
 
   return (
-    /* 1. The Shopify Provider handles the App Bridge/Iframe sync */
     <ShopifyProvider embedded apiKey={apiKey}>
-      
-  <PolarisProvider i18n={enTranslations}>
-        
-        <s-app-nav>
-          <s-link href="/app">Home</s-link>
-          <s-link href="/app/additional">Additional page</s-link>
-          <s-link href="/app/onboarding/welcome">Welcome</s-link>
-          <s-link href="/app/dashboard">dashboard</s-link>
-          {/* ... other links ... */}
-        </s-app-nav>
-
-        <Outlet />
-        
+      <PolarisProvider i18n={enTranslations}>
+        <AppLayout>
+          <Outlet />
+        </AppLayout>
       </PolarisProvider>
     </ShopifyProvider>
   );

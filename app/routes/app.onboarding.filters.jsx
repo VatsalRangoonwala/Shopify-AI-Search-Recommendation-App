@@ -1,28 +1,90 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
-import { Card, Text, BlockStack, Button, Checkbox, InlineStack, Divider, Box } from "@shopify/polaris";
+import {
+  Card,
+  Text,
+  BlockStack,
+  Button,
+  Checkbox,
+  InlineStack,
+  Divider,
+  Box,
+} from "@shopify/polaris";
 import OnboardingLayout from "../components/onboarding/OnboardingLayout";
-
-const initialFilters = [
-  { id: "color", label: "Color", description: "Filter products by color options", enabled: true, checked: true },
-  { id: "size", label: "Size", description: "Filter products by size variants", enabled: true, checked: true },
-  { id: "price", label: "Price Range", description: "Filter products by price brackets", enabled: false, checked: false },
-  { id: "brand", label: "Brand", description: "Filter products by brand name", enabled: false, checked: false },
-  { id: "material", label: "Material", description: "Filter products by material type", enabled: false, checked: false },
-];
 
 const Filters = () => {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState(initialFilters);
+  const [filters, setFilters] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [syncLoader,setSyncLoader] = useState(false)
+
+  // 🔹 Step 1 + 2 combined
+  const handleSyncFilters = async () => {
+    try {
+      setSyncLoader(true);
+
+      // 1️⃣ Trigger background sync
+      await fetch("/api/onboarding/filters", {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // 2️⃣ Fetch updated filters
+      const res = await fetch("/api/admin/filters");
+      const data = await res.json();
+
+      // 3️⃣ Map API response to UI format
+      const formattedFilters = data.filters.map((f) => ({
+        id: f.id,
+        label: f.label,
+        description: `${f.source} - ${f.sourceField || ""}`,
+        checked: f.status === "selected",
+        enabled: f.status !== "disabled",
+      }));
+
+      setFilters(formattedFilters);
+    } catch (err) {
+      console.error("Sync error:", err);
+    } finally {
+      setSyncLoader(false);
+    }
+  };
 
   const toggleFilter = (id) => {
     setFilters((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, checked: !f.checked, enabled: !f.enabled } : f))
+      prev.map((f) => (f.id === id ? { ...f, checked: !f.checked } : f)),
     );
   };
 
+  const handleContinue = async () => {
+    try {
+      setLoading(true);
+
+      // get selected filter IDs
+      const selectedFilters = filters.filter((f) => f.checked).map((f) => f.id);
+
+      if (selectedFilters.length === 0) {
+        alert("Please select at least one filter");
+        return;
+      }
+
+      await fetch("/api/admin/filters", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ filterIds: selectedFilters }),
+      });
+
+      navigate("/app/onboarding/sorting");
+    } catch (error) {
+      console.error("Error saving filters:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <OnboardingLayout currentStep={3}>
+    <OnboardingLayout currentStep={4}>
       <Card>
         <BlockStack gap="500">
           <BlockStack gap="200">
@@ -30,11 +92,17 @@ const Filters = () => {
               Configure Filters
             </Text>
             <Text variant="bodyMd" as="p" tone="subdued">
-              Choose which filters to enable for your storefront search experience.
+              Choose which filters to enable for your storefront search
+              experience.
             </Text>
           </BlockStack>
 
           <Divider />
+
+          {/* 🔹 New Button */}
+          <Button variant="primary" loading={syncLoader} onClick={handleSyncFilters}>
+            Sync Filters
+          </Button>
 
           <BlockStack gap="400">
             {filters.map((filter) => (
@@ -44,6 +112,7 @@ const Filters = () => {
                     label={filter.label}
                     helpText={filter.description}
                     checked={filter.checked}
+                    disabled={!filter.enabled}
                     onChange={() => toggleFilter(filter.id)}
                   />
                 </InlineStack>
@@ -52,7 +121,11 @@ const Filters = () => {
           </BlockStack>
 
           <Box paddingBlockStart="200">
-            <Button variant="primary" onClick={() => navigate("/app/onboarding/sorting")}>
+            <Button
+              variant="primary"
+              loading={loading}
+              onClick={handleContinue}
+            >
               Continue
             </Button>
           </Box>

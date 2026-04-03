@@ -1,10 +1,9 @@
 import React, { useState, useCallback } from "react";
-import { Outlet } from "react-router";
 import { Frame } from "@shopify/polaris";
 import Sidebar from "./Sidebar.jsx";
-import Topbar from "./Topbar.jsx";
+// import Topbar from "./Topbar.jsx";
 
-const AppLayout = () => {
+const AppLayout = ({ children }) => {
   const [mobileNavActive, setMobileNavActive] = useState(false);
 
   const toggleMobileNav = useCallback(
@@ -14,12 +13,12 @@ const AppLayout = () => {
 
   return (
     <Frame
-      topBar={<Topbar onNavigationToggle={toggleMobileNav} />}
+      // topBar={<Topbar onNavigationToggle={toggleMobileNav} />}
       navigation={<Sidebar />}
       showMobileNavigation={mobileNavActive}
       onNavigationDismiss={toggleMobileNav}
     >
-      <Outlet />
+       {children}
     </Frame>
   );
 };

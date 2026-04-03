@@ -119,7 +119,6 @@ export function isUsefulFilterKey(key) {
 //   });
 // }
 
-
 // export async function rebuildFiltersForStore(storeId) {
 //   // 1. delete old filters + values
 //   await prisma.filterValue.deleteMany({
@@ -181,7 +180,7 @@ export async function decrementFilterValue(storeId, key, value) {
       },
     },
   });
-  
+
   if (!filter) return;
 
   const newCount = filter.productCount - 1;
@@ -304,18 +303,6 @@ export function extractFilterableValues(product, productIdRef) {
     filterMap.get("brand")?.productIds.add(productIdRef);
   }
 
-  // Product Type
-  if (product.productType) {
-    addFilterValue(
-      "productType",
-      "Product Type",
-      product.productType,
-      "system",
-      "productType",
-    );
-    filterMap.get("productType")?.productIds.add(productIdRef);
-  }
-
   // Availability
   if (
     product.availableForSale !== null &&
@@ -351,7 +338,9 @@ export function extractFilterableValues(product, productIdRef) {
 
 export async function generateStoreFilters(storeId) {
   const products = await prisma.product.findMany({
-    where: { storeId },
+    where: {
+      storeId,
+    },
     select: {
       vendor: true,
       productType: true,
@@ -365,9 +354,19 @@ export async function generateStoreFilters(storeId) {
   let filterMap = new Map();
   products.forEach((product, index) => {
     const productIdRef = `product-${index}`;
-    filterMap = extractFilterableValues(product, productIdRef);
-  });
+    const productFilters = extractFilterableValues(product, productIdRef);
 
+    productFilters.forEach((value, key) => {
+      if (!filterMap.has(key)) {
+        filterMap.set(key, value);
+      } else {
+        const existing = filterMap.get(key);
+
+        value.values.forEach((v) => existing.values.add(v));
+        value.productIds.forEach((id) => existing.productIds.add(id));
+      }
+    });
+  });
   // Add price as special range filter
   const validPrices = products
     .flatMap((p) => [p.minPrice, p.maxPrice])

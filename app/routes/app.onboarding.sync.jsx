@@ -58,7 +58,7 @@ const Sync = () => {
   }, [jobId]);
 
   return (
-    <OnboardingLayout currentStep={2}>
+    <OnboardingLayout currentStep={3}>
       <Card>
         <BlockStack gap="500">
           <BlockStack gap="200">

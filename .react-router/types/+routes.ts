@@ -76,6 +76,9 @@ type Pages = {
   "/app": {
     params: {};
   };
+  "/app/onboarding/data-quality": {
+    params: {};
+  };
   "/app/onboarding/storefront": {
     params: {};
   };
@@ -114,7 +117,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/onboarding/filters" | "/webhooks/orders/create" | "/api/recommendations" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/filters";
+    page: "/" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/onboarding/filters" | "/webhooks/orders/create" | "/api/recommendations" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/onboarding/data-quality" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/filters";
   };
   "routes/webhooks.app.scopes_update.jsx": {
     id: "routes/webhooks.app.scopes_update";
@@ -198,7 +201,11 @@ type RouteFiles = {
   };
   "routes/app.jsx": {
     id: "routes/app";
-    page: "/app" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/filters";
+    page: "/app" | "/app/onboarding/data-quality" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/filters";
+  };
+  "routes/app.onboarding.data-quality.jsx": {
+    id: "routes/app.onboarding.data-quality";
+    page: "/app/onboarding/data-quality";
   };
   "routes/app.onboarding.storefront.jsx": {
     id: "routes/app.onboarding.storefront";
@@ -273,6 +280,7 @@ type RouteModules = {
   "routes/_index": typeof import("./app/routes/_index/route.jsx");
   "routes/auth.$": typeof import("./app/routes/auth.$.jsx");
   "routes/app": typeof import("./app/routes/app.jsx");
+  "routes/app.onboarding.data-quality": typeof import("./app/routes/app.onboarding.data-quality.jsx");
   "routes/app.onboarding.storefront": typeof import("./app/routes/app.onboarding.storefront.jsx");
   "routes/app.onboarding.complete": typeof import("./app/routes/app.onboarding.complete.jsx");
   "routes/app.onboarding.filters": typeof import("./app/routes/app.onboarding.filters.jsx");

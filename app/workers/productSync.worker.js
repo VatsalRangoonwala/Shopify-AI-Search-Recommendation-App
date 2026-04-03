@@ -69,7 +69,12 @@ const worker = new Worker(
 
       case "filter-sync": {
         const { shop } = job.data;
-        await generateStoreFilters(shop);
+        const store = await prisma.store.findUnique({
+          where: { shop },
+        });
+
+        if (!store) return;
+        await generateStoreFilters(store.id);
 
         break;
       }

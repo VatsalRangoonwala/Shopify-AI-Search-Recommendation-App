@@ -1,13 +1,35 @@
 import React from "react";
-import { useNavigate } from "react-router";
-import { Card, Text, BlockStack, Button, Box, InlineStack, Divider, List, Banner } from "@shopify/polaris";
+import { useLoaderData, useNavigate } from "react-router";
+import {
+  Card,
+  Text,
+  BlockStack,
+  Button,
+  Box,
+  Divider,
+  List,
+} from "@shopify/polaris";
 import OnboardingLayout from "../components/onboarding/OnboardingLayout.jsx";
+import { authenticate } from "../shopify.server.js";
+
+export const loader = async ({ request }) => {
+  const { session } = await authenticate.admin(request);
+  return { shop: session.shop };
+};
 
 const Storefront = () => {
+  const { shop } = useLoaderData();
   const navigate = useNavigate();
 
+  const openThemeEditor = () => {
+  window.open(
+    `https://${shop}/admin/themes/current/editor`,
+    "_blank",
+    "noopener,noreferrer"
+  );
+};
   return (
-    <OnboardingLayout currentStep={5}>
+    <OnboardingLayout currentStep={6}>
       <Card>
         <BlockStack gap="500">
           <BlockStack gap="200">
@@ -33,7 +55,7 @@ const Storefront = () => {
             </List>
           </BlockStack>
 
-          <Button variant="primary" onClick={() => {}}>
+          <Button variant="primary" onClick={openThemeEditor}>
             Customize Theme
           </Button>
 
@@ -48,7 +70,8 @@ const Storefront = () => {
                   width: "100%",
                   maxWidth: 480,
                   height: 200,
-                  background: "linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%)",
+                  background:
+                    "linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%)",
                   borderRadius: 12,
                   display: "flex",
                   alignItems: "center",
@@ -64,7 +87,10 @@ const Storefront = () => {
           </Box>
 
           <Box paddingBlockStart="200">
-            <Button variant="primary" onClick={() => navigate("/app/onboarding/ai")}>
+            <Button
+              variant="primary"
+              onClick={() => navigate("/app/onboarding/ai")}
+            >
               Continue
             </Button>
           </Box>

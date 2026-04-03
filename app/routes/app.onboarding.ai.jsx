@@ -29,7 +29,7 @@ const AiToggle = () => {
   };
 
   return (
-    <OnboardingLayout currentStep={6}>
+    <OnboardingLayout currentStep={7}>
       <Card>
         <BlockStack gap="500">
           <BlockStack gap="200">

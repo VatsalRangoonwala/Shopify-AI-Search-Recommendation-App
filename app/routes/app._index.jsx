@@ -1,40 +1,21 @@
-import { useFetcher } from "react-router";
-import { useEffect, useState } from "react";
+// import { redirect } from "react-router";
+// import prisma from "../db.server.js";
+// import { authenticate } from "../shopify.server";
 
-export default function Dashboard() {
-  const fetcher = useFetcher();
-  const [jobId, setJobId] = useState(null);
-  const [status, setStatus] = useState(null);
+// export const loader = async ({ request }) => {
+//   const { session } = await authenticate.admin(request);
 
-  useEffect(() => {
-    if (fetcher.data?.jobId) {
-      setJobId(fetcher.data.jobId);
-    }
-  }, [fetcher.data]);
+//   const store = await prisma.store.findUnique({
+//     where: { shop: session.shop }
+//   });
 
-  useEffect(() => {
-    if (!jobId) return;
+//   return redirect(
+//     store?.isOnboarding === false
+//       ? "/app/dashboard"
+//       : "/app/onboarding/welcome"
+//   );
+// };
 
-    const interval = setInterval(async () => {
-      const res = await fetch(`/api/sync-status?jobId=${jobId}`);
-      const data = await res.json();
-      setStatus(data);
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [jobId]);
-
-  return (
-    <div>
-      <fetcher.Form method="post" action="/api/sync">
-        <button type="submit">Start Sync</button>
-      </fetcher.Form>
-
-      {status && (
-        <p>
-          {status.processed} / {status.totalProducts} synced
-        </p>
-      )}
-    </div>
-  );
+export default function AppIndex() {
+  return null;
 }

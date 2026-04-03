@@ -3,6 +3,19 @@ import { useNavigate } from "react-router";
 import { Card, Text, BlockStack, Button, InlineStack, Icon, Box, Divider } from "@shopify/polaris";
 import { CheckCircleIcon } from "@shopify/polaris-icons";
 import OnboardingLayout from "../components/onboarding/OnboardingLayout";
+import prisma from "../db.server.js";
+import { authenticate } from "../shopify.server.js";
+
+export const loader = async ({ request }) => {
+  const { session } = await authenticate.admin(request);
+
+  await prisma.store.updateMany({
+    where: { shop: session.shop },
+    data: { isOnboarding: false },
+  });
+
+  return null;
+};
 
 const checklist = [
   "Products synced",
@@ -16,7 +29,7 @@ const Complete = () => {
   const navigate = useNavigate();
 
   return (
-    <OnboardingLayout currentStep={7}>
+    <OnboardingLayout currentStep={8}>
       <Card>
         <BlockStack gap="600">
           <BlockStack gap="300" inlineAlign="center">

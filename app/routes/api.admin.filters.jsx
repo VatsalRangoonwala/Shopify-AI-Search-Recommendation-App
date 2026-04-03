@@ -11,7 +11,7 @@ export const action = async ({ request }) => {
 
     const { filterIds } = body;
 
-    if (filterIds.length == 0) {
+    if (!filterIds || filterIds.length === 0) {
       return jsonError("filters are required", 400);
     }
 
@@ -81,7 +81,7 @@ export const action = async ({ request }) => {
 //   };
 // }
 
-function jsonError(message, status = 400) {
+export function jsonError(message, status = 400) {
   return new Response(JSON.stringify({ success: false, error: message }), {
     status,
     headers: { "Content-Type": "application/json" },

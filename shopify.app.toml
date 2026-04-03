@@ -2,7 +2,7 @@
 
 client_id = "f1852af6c75e782038e88fe437581827"
 name = "New-Recommendation-app"
-application_url = "https://example.com"
+application_url = "https://kinsley-innless-ariana.ngrok-free.dev"
 embedded = true
 
 [build]
@@ -30,7 +30,7 @@ subpath = "api"
 prefix = "apps"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://kinsley-innless-ariana.ngrok-free.dev/auth/callback" ]
 
 [product.metafields.app.demo_info]
 type = "single_line_text_field"

@@ -64,7 +64,7 @@ const Welcome = () => {
           </BlockStack>
 
           <Box paddingBlockStart="400">
-            <Button variant="primary" size="large" onClick={() => navigate("/app/onboarding/sync")}>
+            <Button variant="primary" size="large" onClick={() => navigate("/app/onboarding/data-quality")}>
               Start Setup
             </Button>
           </Box>
