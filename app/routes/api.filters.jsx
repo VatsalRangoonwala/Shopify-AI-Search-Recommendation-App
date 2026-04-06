@@ -13,7 +13,7 @@ export const loader = async ({ request }) => {
   const filters = await prisma.filter.findMany({
     where: {
       storeId: store.id,
-      status:"detected"
+      status:"selected"
     },
     orderBy: { position: "asc" },
   });

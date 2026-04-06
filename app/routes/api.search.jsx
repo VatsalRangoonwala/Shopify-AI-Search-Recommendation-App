@@ -8,7 +8,7 @@ export const action = async ({ request }) => {
   try {
     const body = await request.json();
 
-    const { shop, query, filters = {}, sort } = body;
+    const { shop, query, filters = {}, sort,priceRange } = body;
 
     // 🔹 1. Get Store
     const store = await prisma.store.findUnique({
@@ -20,13 +20,7 @@ export const action = async ({ request }) => {
     }
 
     // 🔹 2. Get Filter & Sorting Config (DB-driven)
-    const [filtersConfig, sortingConfig] = await Promise.all([
-      prisma.filter.findMany({
-        where: {
-          storeId: store.id,
-          status:"detected"
-        },
-      }),
+    const [sortingConfig] = await Promise.all([
       prisma.sorting.findMany({
         where: {
           storeId: store.id,
@@ -36,7 +30,7 @@ export const action = async ({ request }) => {
     ]);
 
     // 🔹 3. Build Queries
-    const filterQuery = buildFilterQuery(filtersConfig, filters);
+    const filterQuery = buildFilterQuery(filters,priceRange);
     const sortingQuery = buildSortingQuery(sortingConfig, sort);
 
     let products = [];

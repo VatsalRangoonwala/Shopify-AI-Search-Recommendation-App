@@ -8,33 +8,26 @@ export function toLabel(key) {
     .trim();
 }
 
-export function buildFilterQuery(filtersConfig, userFilters) {
-  let where = {};
+export function buildFilterQuery(userFilters, priceRange) {
+  let query = {};
 
-  for (const filter of filtersConfig) {
-    const userValue = userFilters[filter.name];
-
-    if (!userValue) continue;
-
-    switch (filter.field) {
-      case "tags":
-        where.tags = {
-          hasSome: Array.isArray(userValue) ? userValue : [userValue],
-        };
-        break;
-
-      case "price":
-        where.price = {
-          lt: parseFloat(userValue),
-        };
-        break;
-
-      default:
-        break;
+  userFilters.forEach((value, key) => {
+    if (value.source === "system") {
+      if (key !== "price") {
+        query[value.sourcefield] = { in: value.values };
+      } else {
+        query.minPrice = { gte: priceRange.min };
+        query.maxPrice = { lte: priceRange.max };
+      }
+    } else if (value.source === "attribute") {
+      if (!query.attributes) {
+        query.attributes = {};
+      }
+      query.attributes[value.sourcefield] = { in: value.values };
     }
-  }
+  });
 
-  return where;
+  return query;
 }
 
 function guessUiType(key) {
@@ -378,10 +371,8 @@ export async function generateStoreFilters(storeId) {
       label: "Price",
       source: "system",
       sourceField: "minPrice,maxPrice",
-      values: [],
+      values: [Math.min(...validPrices), Math.max(...validPrices)],
       productIds: new Set(products.map((_, i) => `product-${i}`)),
-      min: Math.min(...validPrices),
-      max: Math.max(...validPrices),
       valueType: "range",
       uiType: "slider",
     });
