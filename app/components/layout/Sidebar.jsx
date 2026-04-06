@@ -1,18 +1,17 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Navigation } from "@shopify/polaris";
-import { HomeIcon, ClipboardCheckFilledIcon } from "@shopify/polaris-icons";
+import { HomeIcon, ClipboardCheckFilledIcon, SettingsIcon } from "@shopify/polaris-icons";
 
-const Sidebar = () => {
+const Sidebar = ({ store }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const isActive = (path) => location.pathname.startsWith(path);
 
-  return (
-    <Navigation location={location.pathname}>
-      <Navigation.Section
-        items={[
+  const items =
+    store?.isOnboarding === false
+      ? [
           {
             label: "Dashboard",
             icon: HomeIcon,
@@ -20,13 +19,24 @@ const Sidebar = () => {
             onClick: () => navigate("/app/dashboard"),
           },
           {
+            label: "Settings",
+            icon: SettingsIcon,
+            selected: isActive("/app/settings"),
+            onClick: () => navigate("/app/settings"),
+          }
+        ]
+      : [
+          {
             label: "Onboarding",
             icon: ClipboardCheckFilledIcon,
             selected: isActive("/app/onboarding"),
             onClick: () => navigate("/app/onboarding/welcome"),
           },
-        ]}
-      />
+        ];
+
+  return (
+    <Navigation location={location.pathname}>
+      <Navigation.Section items={items} />
     </Navigation>
   );
 };

@@ -1,6 +1,6 @@
 import React from "react";
-import { BlockStack, Checkbox, Text, InlineStack, Icon, Tooltip } from "@shopify/polaris";
-import { QuestionCircleIcon } from "@shopify/polaris-icons";
+import { BlockStack, Text, InlineStack, Icon, Tooltip, Box } from "@shopify/polaris";
+import { QuestionCircleIcon, CheckCircleIcon, CircleIcon } from "@shopify/polaris-icons";
 
 const ITEMS = [
   {
@@ -37,39 +37,60 @@ const ITEMS = [
 
 const Checklist = ({ checked, onToggle }) => (
   <BlockStack gap="400">
-    {ITEMS.map((item) => (
-      <div
-        key={item.id}
-        style={{
-          padding: "12px 16px",
-          borderRadius: "8px",
-          background: checked[item.id] ? "var(--p-color-bg-surface-success)" : "var(--p-color-bg-surface-secondary)",
-          transition: "background 0.2s",
-        }}
-      >
-        <InlineStack align="space-between" blockAlign="start" gap="200">
-          <InlineStack gap="200" blockAlign="start" wrap={false}>
-            <Checkbox
-              label=""
-              checked={checked[item.id] || false}
-              onChange={() => onToggle(item.id)}
-              labelHidden
-            />
-            <BlockStack gap="100">
-              <Text variant="bodyMd" as="span" fontWeight="semibold">
-                {item.label}
-              </Text>
-              <Text variant="bodySm" as="span" tone="subdued">
-                {item.helper}
-              </Text>
-            </BlockStack>
+    {ITEMS.map((item) => {
+      const isDone = checked[item.id];
+      
+      return (
+        <div
+          key={item.id}
+          onClick={() => onToggle(item.id)}
+          style={{
+            padding: "12px 16px",
+            borderRadius: "12px",
+            cursor: "pointer",
+            border: "1px solid var(--p-color-border-subdued)",
+            background: isDone 
+              ? "var(--p-color-bg-surface-success)" 
+              : "var(--p-color-bg-surface)",
+            transition: "all 0.2s ease",
+          }}
+          // Simple hover effect using standard CSS logic
+          onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--p-color-border-brand)"}
+          onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--p-color-border-subdued)"}
+        >
+          <InlineStack align="space-between" blockAlign="center" gap="400">
+            <InlineStack gap="300" blockAlign="center" wrap={false}>
+              {/* Replacing Checkbox with a Status Icon */}
+              <Icon 
+                source={isDone ? CheckCircleIcon : CircleIcon} 
+                tone={isDone ? "success" : "subdued"} 
+              />
+              
+              <BlockStack gap="050">
+                <Text 
+                  variant="bodyMd" 
+                  as="span" 
+                  fontWeight="semibold"
+                  // Optional: strike-through text if checked
+                  style={{ textDecoration: isDone ? 'line-through' : 'none', opacity: isDone ? 0.7 : 1 }}
+                >
+                  {item.label}
+                </Text>
+                <Text variant="bodySm" as="span" tone="subdued">
+                  {item.helper}
+                </Text>
+              </BlockStack>
+            </InlineStack>
+
+            <Tooltip content={item.tip} dismissOnMouseOut>
+              <Box padding="100">
+                <Icon source={QuestionCircleIcon} tone="subdued" />
+              </Box>
+            </Tooltip>
           </InlineStack>
-          <Tooltip content={item.tip}>
-            <Icon source={QuestionCircleIcon} tone="subdued" />
-          </Tooltip>
-        </InlineStack>
-      </div>
-    ))}
+        </div>
+      );
+    })}
   </BlockStack>
 );
 

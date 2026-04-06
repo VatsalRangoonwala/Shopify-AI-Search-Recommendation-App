@@ -1,68 +1,119 @@
 import React from "react";
-import { Card, Text, BlockStack, InlineStack, Box } from "@shopify/polaris";
+import {
+  Card,
+  Text,
+  BlockStack,
+  InlineStack,
+  Box,
+  Select,
+} from "@shopify/polaris";
 
-const searchData = [
-  { label: "Mon", value: 320 },
-  { label: "Tue", value: 480 },
-  { label: "Wed", value: 420 },
-  { label: "Thu", value: 560 },
-  { label: "Fri", value: 610 },
-  { label: "Sat", value: 750 },
-  { label: "Sun", value: 690 },
-];
+const TrendsChart = ({ data = [], onFilterChange, selectedPeriod, isLoading }) => {
+  const options = [
+    { label: "Last 24 Hours", value: "day" },
+    { label: "Last 7 Days", value: "week" },
+    { label: "Last 30 Days", value: "month" },
+    { label: "Last Year", value: "year" },
+  ];
 
-const maxValue = Math.max(...searchData.map((d) => d.value));
+  const maxValue = data.length > 0 
+    ? Math.max(...data.map((d) => d.searches || 0)) 
+    : 100;
 
-const TrendsChart = () => (
-  <BlockStack gap="400">
-    <Text variant="headingMd" as="h2">Trends</Text>
-    <InlineStack gap="400" wrap>
-      <div style={{ flex: "1 1 300px" }}>
-        <Card>
-          <BlockStack gap="300">
-            <Text variant="headingSm" as="h3">Searches (Last 7 Days)</Text>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 120 }}>
-              {searchData.map((d) => (
-                <div key={d.label} style={{ flex: 1, textAlign: "center" }}>
-                  <div
-                    style={{
-                      height: `${(d.value / maxValue) * 100}px`,
-                      background: "var(--p-color-bg-fill-brand)",
-                      borderRadius: 4,
-                      minHeight: 4,
-                    }}
-                  />
-                  <Text variant="bodySm" as="p" tone="subdued">{d.label}</Text>
-                </div>
-              ))}
-            </div>
-          </BlockStack>
-        </Card>
-      </div>
-      <div style={{ flex: "1 1 300px" }}>
-        <Card>
-          <BlockStack gap="300">
-            <Text variant="headingSm" as="h3">CTR Trend (Last 7 Days)</Text>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 120 }}>
-              {[8.2, 9.1, 11.4, 10.8, 12.3, 14.1, 12.0].map((val, i) => (
-                <div key={i} style={{ flex: 1, textAlign: "center" }}>
-                  <div
-                    style={{
-                      height: `${(val / 15) * 100}px`,
-                      background: "var(--p-color-bg-fill-success)",
-                      borderRadius: 4,
-                      minHeight: 4,
-                    }}
-                  />
-                  <Text variant="bodySm" as="p" tone="subdued">{searchData[i].label}</Text>
-                </div>
-              ))}
-            </div>
-          </BlockStack>
-        </Card>
-      </div>
-    </InlineStack>
-  </BlockStack>
-);
+  const currentPeriodLabel = options.find((o) => o.value === selectedPeriod)?.label || "Last 7 Days";
+
+  return (
+    <BlockStack gap="400">
+      <InlineStack align="space-between" blockAlign="center">
+        <Text variant="headingMd" as="h2">Trends</Text>
+        <Box width="200px">
+          <Select
+            label="Date range"
+            labelHidden
+            options={options}
+            onChange={onFilterChange}
+            value={selectedPeriod}
+            disabled={isLoading}
+          />
+        </Box>
+      </InlineStack>
+
+      <InlineStack gap="400" wrap>
+        {/* Searches Card */}
+        <div style={{ flex: "1 1 300px" }}>
+          <Card>
+            <BlockStack gap="300">
+              <Text variant="headingSm" as="h3">
+                Searches ({currentPeriodLabel})
+              </Text>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: 8,
+                  height: 120,
+                  opacity: isLoading ? 0.5 : 1,
+                  transition: "opacity 0.2s ease",
+                }}
+              >
+                {data.map((d, i) => (
+                  <div key={`search-${i}`} style={{ flex: 1, textAlign: "center" }}>
+                    <div
+                      style={{
+                        height: `${((d.searches || 0) / maxValue) * 100}%`,
+                        background: "var(--p-color-bg-fill-brand)",
+                        borderRadius: 4,
+                        minHeight: 4,
+                        transition: "height 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                      }}
+                    />
+                    <Text variant="bodySm" as="p" tone="subdued">{d.label}</Text>
+                  </div>
+                ))}
+              </div>
+            </BlockStack>
+          </Card>
+        </div>
+
+        {/* CTR Card */}
+        <div style={{ flex: "1 1 300px" }}>
+          <Card>
+            <BlockStack gap="300">
+              <Text variant="headingSm" as="h3">CTR Trend (%)</Text>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: 8,
+                  height: 120,
+                  opacity: isLoading ? 0.5 : 1,
+                  transition: "opacity 0.2s ease",
+                }}
+              >
+                {data.map((d, i) => {
+                  const ctr = d.views > 0 ? (d.clicks / d.views) * 100 : 0;
+                  return (
+                    <div key={`ctr-${i}`} style={{ flex: 1, textAlign: "center" }}>
+                      <div
+                        style={{
+                          height: `${Math.min(ctr * 2, 100)}%`, // Scaled for visibility
+                          background: "var(--p-color-bg-fill-success)",
+                          borderRadius: 4,
+                          minHeight: 4,
+                          transition: "height 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                        }}
+                      />
+                      <Text variant="bodySm" as="p" tone="subdued">{d.label}</Text>
+                    </div>
+                  );
+                })}
+              </div>
+            </BlockStack>
+          </Card>
+        </div>
+      </InlineStack>
+    </BlockStack>
+  );
+};
 
 export default TrendsChart;

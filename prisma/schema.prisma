@@ -142,6 +142,7 @@ model Event {
   customerId String?
   type       String
   productId  String
+  value      Float?   
   timestamp  DateTime @default(now())
 
   store Store @relation(fields: [storeId], references: [id])

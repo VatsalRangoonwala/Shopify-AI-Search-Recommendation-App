@@ -1,13 +1,45 @@
 import React, { useState, useCallback } from "react";
-import { TopBar, ActionList, Icon } from "@shopify/polaris";
-import { StoreIcon } from "@shopify/polaris-icons";
+import { TopBar, Icon } from "@shopify/polaris";
+import { MenuIcon } from "@shopify/polaris-icons";
 
-const Topbar = ({ onNavigationToggle }) => {
+const Topbar = ({ onNavigationToggle, sidebarVisible, store }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const toggleUserMenu = useCallback(
     () => setUserMenuOpen((open) => !open),
-    []
+    [],
+  );
+
+  // Generate initials from store name
+  const getInitials = (name) => {
+    if (!name) return "S";
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const navigationButtonMarkup = (
+    <button
+      type="button"
+      onClick={onNavigationToggle}
+      aria-label={sidebarVisible ? "Close sidebar" : "Open sidebar"}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "2.5rem",
+        height: "2.5rem",
+        border: "none",
+        borderRadius: "0.75rem",
+        background: "transparent",
+        cursor: "pointer",
+      }}
+    >
+      <Icon source={MenuIcon} tone="base" />
+    </button>
   );
 
   const userMenuMarkup = (
@@ -21,20 +53,16 @@ const Topbar = ({ onNavigationToggle }) => {
           ],
         },
       ]}
-      name="Store Admin"
-      detail="my-store.myshopify.com"
-      initials="SA"
+      name={store?.name || "Store"}
+      detail={store?.shop || ""}
+      initials={getInitials(store?.name)}
       open={userMenuOpen}
       onToggle={toggleUserMenu}
     />
   );
 
   return (
-    <TopBar
-      showNavigationToggle
-      userMenu={userMenuMarkup}
-      onNavigationToggle={onNavigationToggle}
-    />
+    <TopBar contextControl={navigationButtonMarkup} userMenu={userMenuMarkup} />
   );
 };
 

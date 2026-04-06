@@ -1,24 +1,33 @@
 import React, { useState, useCallback } from "react";
 import { Frame } from "@shopify/polaris";
 import Sidebar from "./Sidebar.jsx";
-// import Topbar from "./Topbar.jsx";
+import Topbar from "./Topbar.jsx";
 
-const AppLayout = ({ children }) => {
-  const [mobileNavActive, setMobileNavActive] = useState(false);
+const AppLayout = ({ children, store }) => {
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
-  const toggleMobileNav = useCallback(
-    () => setMobileNavActive((active) => !active),
-    []
-  );
+  const toggleSidebar = useCallback(() => {
+    setSidebarVisible((visible) => !visible);
+  }, []);
+
+  const closeSidebar = useCallback(() => {
+    setSidebarVisible(false);
+  }, []);
 
   return (
     <Frame
-      // topBar={<Topbar onNavigationToggle={toggleMobileNav} />}
-      navigation={<Sidebar />}
-      showMobileNavigation={mobileNavActive}
-      onNavigationDismiss={toggleMobileNav}
+      topBar={
+        <Topbar
+          onNavigationToggle={toggleSidebar}
+          sidebarVisible={sidebarVisible}
+          store={store}
+        />
+      }
+      navigation={sidebarVisible ? <Sidebar store={store} /> : null}
+      showMobileNavigation={sidebarVisible}
+      onNavigationDismiss={closeSidebar}
     >
-       {children}
+      {children}
     </Frame>
   );
 };
