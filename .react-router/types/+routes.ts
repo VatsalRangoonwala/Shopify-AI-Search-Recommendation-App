@@ -14,6 +14,9 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/api/recommendation-performance": {
+    params: {};
+  };
   "/webhooks/app/scopes_update": {
     params: {};
   };
@@ -35,7 +38,13 @@ type Pages = {
   "/webhooks/orders/create": {
     params: {};
   };
+  "/api/filter-analytics": {
+    params: {};
+  };
   "/api/recommendations": {
+    params: {};
+  };
+  "/api/search-insights": {
     params: {};
   };
   "/api/admin/filters": {
@@ -120,7 +129,11 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/onboarding/filters" | "/webhooks/orders/create" | "/api/recommendations" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/onboarding/data-quality" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/settings" | "/app/filters";
+    page: "/" | "/api/recommendation-performance" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/onboarding/filters" | "/webhooks/orders/create" | "/api/filter-analytics" | "/api/recommendations" | "/api/search-insights" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/onboarding/data-quality" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/settings" | "/app/filters";
+  };
+  "routes/api.recommendation-performance.jsx": {
+    id: "routes/api.recommendation-performance";
+    page: "/api/recommendation-performance";
   };
   "routes/webhooks.app.scopes_update.jsx": {
     id: "routes/webhooks.app.scopes_update";
@@ -150,9 +163,17 @@ type RouteFiles = {
     id: "routes/webhooks.orders.create";
     page: "/webhooks/orders/create";
   };
+  "routes/api.filter-analytics.jsx": {
+    id: "routes/api.filter-analytics";
+    page: "/api/filter-analytics";
+  };
   "routes/api.recommendations.jsx": {
     id: "routes/api.recommendations";
     page: "/api/recommendations";
+  };
+  "routes/api.search-insights.jsx": {
+    id: "routes/api.search-insights";
+    page: "/api/search-insights";
   };
   "routes/api.admin.filters.jsx": {
     id: "routes/api.admin.filters";
@@ -266,6 +287,7 @@ type RouteFiles = {
 
 type RouteModules = {
   "root": typeof import("./app/root.jsx");
+  "routes/api.recommendation-performance": typeof import("./app/routes/api.recommendation-performance.jsx");
   "routes/webhooks.app.scopes_update": typeof import("./app/routes/webhooks.app.scopes_update.jsx");
   "routes/webhooks.app.uninstalled": typeof import("./app/routes/webhooks.app.uninstalled.jsx");
   "routes/webhooks.products.create": typeof import("./app/routes/webhooks.products.create.jsx");
@@ -273,7 +295,9 @@ type RouteModules = {
   "routes/webhooks.products.update": typeof import("./app/routes/webhooks.products.update.jsx");
   "routes/api.onboarding.filters": typeof import("./app/routes/api.onboarding.filters.jsx");
   "routes/webhooks.orders.create": typeof import("./app/routes/webhooks.orders.create.jsx");
+  "routes/api.filter-analytics": typeof import("./app/routes/api.filter-analytics.jsx");
   "routes/api.recommendations": typeof import("./app/routes/api.recommendations.jsx");
+  "routes/api.search-insights": typeof import("./app/routes/api.search-insights.jsx");
   "routes/api.admin.filters": typeof import("./app/routes/api.admin.filters.jsx");
   "routes/api.sync-status": typeof import("./app/routes/api.sync-status.jsx");
   "routes/api.analytics": typeof import("./app/routes/api.analytics.jsx");

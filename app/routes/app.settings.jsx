@@ -109,9 +109,9 @@ export default function Settings() {
               </Banner>
             )}
 
-            <SearchSettings state={state} onChange={onChange} />
-            <RecommendationSettings state={state} onChange={onChange} />
-            <AISettings state={state} onChange={onChange} />
+            {/* <SearchSettings state={state} onChange={onChange} /> */}
+            {/* <RecommendationSettings state={state} onChange={onChange} /> */}
+            {/* <AISettings state={state} onChange={onChange} /> */}
             <FilterSettings state={state} onChange={onChange} />
             <SortingSettings state={state} onChange={onChange} />
             <DangerZone onAction={handleDanger} />

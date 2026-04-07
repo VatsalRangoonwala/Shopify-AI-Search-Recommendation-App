@@ -1,6 +1,6 @@
 import React from "react";
 import { BlockStack, Text, InlineStack, Icon, Tooltip, Box } from "@shopify/polaris";
-import { QuestionCircleIcon, CheckCircleIcon, CircleIcon } from "@shopify/polaris-icons";
+import { QuestionCircleIcon, CheckCircleIcon , MinusCircleIcon} from "@shopify/polaris-icons";
 
 const ITEMS = [
   {
@@ -62,7 +62,7 @@ const Checklist = ({ checked, onToggle }) => (
             <InlineStack gap="300" blockAlign="center" wrap={false}>
               {/* Replacing Checkbox with a Status Icon */}
               <Icon 
-                source={isDone ? CheckCircleIcon : CircleIcon} 
+                source={isDone ? CheckCircleIcon :  MinusCircleIcon} 
                 tone={isDone ? "success" : "subdued"} 
               />
               
