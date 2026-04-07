@@ -62,7 +62,7 @@ function guessUiType(key) {
 }
 
 export function normalizeValue(value) {
-  return String(value).trim().toLowerCase();
+  return String(value).trim();
 }
 
 export function isUsefulFilterKey(key) {
@@ -185,7 +185,13 @@ export async function updateFiltersForProductChange(oldProduct, newProduct) {
   return;
 }
 
-export async function decrementFilterValue(storeId, key, value) {
+export async function decrementFilterValue(
+  storeId,
+  key,
+  value,
+  isFirstValue,
+  product,
+) {
   const normalizedKey = normalizeKey(key);
   const isPrice = normalizedKey === "price";
 
@@ -199,43 +205,104 @@ export async function decrementFilterValue(storeId, key, value) {
   });
 
   if (!existingFilter) return null;
-
   if (isPrice) {
-    return existingFilter; // do nothing for price
+    await prisma.filter.update({
+      where: { id: existingFilter.id },
+      data: {
+        ...(isFirstValue && {
+          productCount: { decrement: 1 },
+        }),
+      },
+    });
+
+    const updatedFilter = await prisma.filter.findUnique({
+      where: { id: existingFilter.id },
+    });
+
+    if (updatedFilter.productCount <= 0) {
+      await prisma.filter.delete({ where: { id: existingFilter.id } });
+    }
+
+    return;
   }
 
   const normalizedValue = normalizeValue(value);
   if (!normalizedValue) return null;
 
-  const currentValues = existingFilter.values || [];
-  if (currentValues.length <= 1 && existingFilter.productCount <= 1) {
-    return prisma.filter.delete({ where: { id: existingFilter.id } });
+  let whereCondition = {
+    storeId,
+    NOT: { id: product.id },
+  };
+
+  // 🔥 SYSTEM FIELDS
+  if (normalizedKey === "brand") {
+    whereCondition.vendor = normalizedValue;
+  } else if (normalizedKey === "availability") {
+    whereCondition.availableForSale = normalizedValue === "In Stock";
   }
 
-  const newProductCount = Math.max((existingFilter.productCount || 1) - 1, 0);
+  // 🔥 ATTRIBUTE FIELDS (dynamic JSON)
+  else {
+    whereCondition.attributes = {
+      path: [normalizedKey],
+      array_contains: [normalizedValue],
+    };
+  }
 
-  return prisma.filter.update({
+  // 🔍 Check if value still exists in other products
+  const stillExists = await prisma.product.findFirst({
+    where: whereCondition,
+  });
+
+  let updatedValues = existingFilter.values;
+
+  if (!stillExists) {
+    updatedValues = existingFilter.values.filter((v) => v !== normalizedValue);
+  }
+
+  await prisma.filter.update({
     where: { id: existingFilter.id },
     data: {
-      productCount: newProductCount,
+      values: {
+        set: updatedValues,
+      },
+      ...(isFirstValue && {
+        productCount: { decrement: 1 },
+      }),
     },
   });
+
+  const updatedFilter = await prisma.filter.findUnique({
+    where: { id: existingFilter.id },
+  });
+
+  if (updatedFilter.productCount <= 0) {
+    await prisma.filter.delete({ where: { id: existingFilter.id } });
+  }
 }
 
 export async function removeProductFromFilters(product) {
   const extracted = extractFilterableValues(product);
 
-  for (const [key, values] of Object.entries(extracted)) {
-    if (!Array.isArray(values)) continue;
+  for (const [key, filterObj] of extracted.entries()) {
+    const values = Array.from(filterObj.values);
 
+    let isFirstValue = true;
     for (const value of values) {
-      await decrementFilterValue(product.storeId, key, value);
+      await decrementFilterValue(
+        product.storeId,
+        key,
+        value,
+        isFirstValue,
+        product,
+      );
+      isFirstValue = false;
     }
   }
   return;
 }
 
-export async function incrementFilterValue(storeId, key, value) {
+export async function incrementFilterValue(storeId, key, value, isFirstValue) {
   const normalizedKey = normalizeKey(key);
   const isPrice = normalizedKey === "price";
 
@@ -253,7 +320,16 @@ export async function incrementFilterValue(storeId, key, value) {
   // ----------------------------
   if (isPrice) {
     if (existingFilter) {
-      return existingFilter; // price filter already exists, no need to increment blindly
+      return prisma.filter.update({
+        where: {
+          id: existingFilter.id,
+        },
+        data: {
+          productCount: {
+            increment: 1,
+          },
+        },
+      }); // price filter already exists, no need to increment blindly
     }
 
     return prisma.filter.create({
@@ -298,9 +374,9 @@ export async function incrementFilterValue(storeId, key, value) {
         uniqueCount: alreadyExists
           ? existingFilter.uniqueCount
           : existingFilter.uniqueCount + 1,
-        productCount: {
-          increment: 1,
-        },
+        productCount: isFirstValue
+          ? { increment: 1 }
+          : existingFilter.productCount,
       },
     });
   }
@@ -328,23 +404,22 @@ export async function incrementFilterValue(storeId, key, value) {
 }
 
 export async function addProductToFilters(product) {
-  const extracted = extractFilterableValues(product);
+  const extracted = extractFilterableValues(product, product.id);
 
-  for (const [key, values] of Object.entries(extracted)) {
-    if (!Array.isArray(values)) continue;
+  for (const [key, filterObj] of extracted.entries()) {
+    const values = Array.from(filterObj.values);
 
+    let isFirstValue = true;
     for (const value of values) {
-      await incrementFilterValue(product.storeId, key, value);
+      await incrementFilterValue(product.storeId, key, value, isFirstValue);
+      isFirstValue = false;
     }
   }
 
-  // Create price filter once (range filter, not value list)
-  if (product.minPrice !== null && product.minPrice !== undefined) {
+  if (product.minPrice != null) {
     await incrementFilterValue(product.storeId, "price", null);
   }
-  return;
 }
-
 export function extractFilterableValues(product, productIdRef) {
   const filterMap = new Map();
 

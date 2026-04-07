@@ -117,14 +117,14 @@ export function normalizeMetafields(metafields) {
   return result;
 }
 
-export function buildProductAttributes(
+export function buildProductAttributes({
   product = {},
   variants = [],
   metafields = [],
   options = [],
-) {
+}) {
   const attributes = {};
-
+  
   const addValue = (key, value) => {
     if (!key || !value) return;
 
@@ -282,7 +282,7 @@ export function normalizeWebhookProduct(product) {
 
   return {
     shopifyGraphqlId: product.admin_graphql_api_id || null,
-    shopifyProductId: extractShopifyId(product.id),
+    shopifyProductId: String(product.id),
 
     title: product.title || "",
     handle: product.handle || null,

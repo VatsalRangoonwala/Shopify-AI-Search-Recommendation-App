@@ -128,17 +128,25 @@ const worker = new Worker(
 
         const normalized = normalizeWebhookProduct(product);
 
-        const newProduct = await prisma.product.update({
+        const newProduct = await prisma.product.upsert({
           where: {
             storeId_shopifyProductId: {
               storeId: store.id,
               shopifyProductId: normalized.shopifyProductId.toString(),
             },
           },
-          data: normalized,
+          update: normalized,
+          create: {
+            ...normalized,
+            storeId: store.id,
+          },
         });
 
-        await updateFiltersForProductChange(oldProduct, newProduct);
+        if (oldProduct) {
+          await updateFiltersForProductChange(oldProduct, newProduct);
+        } else {
+          await addProductToFilters(newProduct);
+        }
 
         break;
       }
