@@ -8,7 +8,7 @@ export const action = async ({ request }) => {
   try {
     const body = await request.json();
 
-    const { shop, query, filters = {}, sort,priceRange } = body;
+    const { shop, query, filters, sort } = body;
 
     // 🔹 1. Get Store
     const store = await prisma.store.findUnique({
@@ -20,7 +20,13 @@ export const action = async ({ request }) => {
     }
 
     // 🔹 2. Get Filter & Sorting Config (DB-driven)
-    const [sortingConfig] = await Promise.all([
+    const [filterConfig, sortingConfig] = await Promise.all([
+      prisma.filter.findMany({
+        where: {
+          storeId: store.id,
+          status: "selected",
+        },
+      }),
       prisma.sorting.findMany({
         where: {
           storeId: store.id,
@@ -30,8 +36,9 @@ export const action = async ({ request }) => {
     ]);
 
     // 🔹 3. Build Queries
-    const filterQuery = buildFilterQuery(filters,priceRange);
+    const filterQuery = buildFilterQuery(filterConfig,filters);
     const sortingQuery = buildSortingQuery(sortingConfig, sort);
+
 
     let products = [];
 
@@ -55,7 +62,7 @@ export const action = async ({ request }) => {
         products = await prisma.product.findMany({
           where: {
             storeId: store.id,
-            ...filterQuer 
+            ...filterQuery,
           },
           orderBy: sortingQuery,
           take: 50,
@@ -67,29 +74,29 @@ export const action = async ({ request }) => {
       // =========================================================
       // 🔥 5. APPLY FILTERS (IN-MEMORY after AI ranking)
       // =========================================================
-      if (filters && Object.keys(filters).length > 0) {
-        products = products.filter((product) => {
-          return filtersConfig.every((filter) => {
-            const userValue = filters[filter.name];
-            if (!userValue) return true;
+      // if (filters && Object.keys(filters).length > 0) {
+      //   products = products.filter((product) => {
+      //     return filtersConfig.every((filter) => {
+      //       const userValue = filters[filter.name];
+      //       if (!userValue) return true;
 
-            switch (filter.field) {
-              case "tags":
-                return product.tags?.some((tag) =>
-                  Array.isArray(userValue)
-                    ? userValue.includes(tag)
-                    : userValue === tag,
-                );
+      //       switch (filter.field) {
+      //         case "tags":
+      //           return product.tags?.some((tag) =>
+      //             Array.isArray(userValue)
+      //               ? userValue.includes(tag)
+      //               : userValue === tag,
+      //           );
 
-              case "price":
-                return product.price < parseFloat(userValue);
+      //         case "price":
+      //           return product.price < parseFloat(userValue);
 
-              default:
-                return true;
-            }
-          });
-        });
-      }
+      //         default:
+      //           return true;
+      //       }
+      //     });
+      //   });
+      // }
 
       // =========================================================
       // 🔥 6. APPLY SORTING (IN-MEMORY)

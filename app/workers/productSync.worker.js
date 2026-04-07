@@ -106,7 +106,7 @@ const worker = new Worker(
         const newProduct = normalizeShopifyProduct(product);
 
         const Product = await prisma.product.create({
-          data: newProduct,
+          data: { storeId: store.id, ...newProduct },
         });
 
         await addProductToFilters(Product);
@@ -119,15 +119,23 @@ const worker = new Worker(
 
         const oldProduct = await prisma.product.findUnique({
           where: {
-            shopifyProductId: product.id.toString(),
-            storeId: store.id,
+            storeId_shopifyProductId: {
+              shopifyProductId: product.id.toString(),
+              storeId: store.id,
+            },
           },
         });
 
-        const Product = normalizeShopifyProduct(product);
+        const normalized = normalizeShopifyProduct(product);
+
         const newProduct = await prisma.product.update({
-          where: { shopifyProductId: product.shopifyProductId.toString() },
-          data: Product,
+          where: {
+            storeId_shopifyProductId: {
+              storeId: store.id,
+              shopifyProductId: normalized.shopifyProductId.toString(),
+            },
+          },
+          data: normalized,
         });
 
         await updateFiltersForProductChange(oldProduct, newProduct);
@@ -140,15 +148,19 @@ const worker = new Worker(
 
         const product = await prisma.product.findUnique({
           where: {
-            shopifyProductId: productId.toString(),
-            storeId: store.id,
+            storeId_shopifyProductId: {
+              shopifyProductId: productId.toString(),
+              storeId: store.id,
+            },
           },
         });
         await removeProductFromFilters(product);
-        await prisma.product.deleteMany({
+        await prisma.product.delete({
           where: {
-            shopifyProductId: productId.toString(),
-            storeId: store.id,
+            storeId_shopifyProductId: {
+              shopifyProductId: productId.toString(),
+              storeId: store.id,
+            },
           },
         });
 
