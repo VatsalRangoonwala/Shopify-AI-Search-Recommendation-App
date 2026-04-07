@@ -8,7 +8,7 @@ import {
   Select,
   Layout,
   SkeletonBodyText,
-} from "@/pshopifyolaris";
+} from "@shopify/polaris";
 
 const TrendsChart = ({
   data = [],
