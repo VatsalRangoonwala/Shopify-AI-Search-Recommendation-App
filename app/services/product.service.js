@@ -64,6 +64,8 @@ export function isUsefulOption(name, value) {
     "color",
     "size",
     "material",
+    "fabric",
+    "gender",
     "style",
     "fit",
     "length",
@@ -73,6 +75,16 @@ export function isUsefulOption(name, value) {
     "finish",
     "pattern",
     "pack size",
+    "sleeve_type",
+    "neck_type",
+    "skin_type",
+    "hair_type",
+    "compatibility",
+    "device_type",
+    "usage",
+    "feature",
+    "origin",
+    "collection_style",
   ];
 
   const normalizedName = normalizeKey(name);
@@ -94,7 +106,23 @@ export function normalizeKey(key) {
     .join("");
 }
 
-export function buildProductAttributes(product, variants, metafields) {
+export function normalizeMetafields(metafields) {
+  const result = {};
+
+  for (const field of metafields) {
+    const key = `${field.namespace}.${field.key}`;
+    result[key] = field.value;
+  }
+
+  return result;
+}
+
+export function buildProductAttributes(
+  product = {},
+  variants = [],
+  metafields = [],
+  options = [],
+) {
   const attributes = {};
 
   const addValue = (key, value) => {
@@ -114,10 +142,9 @@ export function buildProductAttributes(product, variants, metafields) {
     }
   };
 
-  // system fields
   addValue("productType", product.productType);
 
-  // options from variants (best source)
+  // 1. variant selectedOptions (GraphQL best source)
   for (const variant of variants) {
     for (const option of variant.selectedOptions || []) {
       if (isUsefulOption(option.name, option.value)) {
@@ -126,7 +153,18 @@ export function buildProductAttributes(product, variants, metafields) {
     }
   }
 
-  // metafields
+  // 2. fallback to product options (Webhook / REST)
+  for (const option of options) {
+    if (!option?.name) continue;
+
+    for (const value of option.values || []) {
+      if (isUsefulOption(option.name, value)) {
+        addValue(option.name, value);
+      }
+    }
+  }
+
+  // 3. metafields
   for (const field of metafields) {
     if (isUsefulMetafield(field)) {
       addValue(field.key, field.value);
@@ -147,7 +185,7 @@ export function normalizeShopifyProduct(product) {
 
   const comparePrices = variants
     .map((v) => parseFloat(v.compareAtPrice || 0))
-    .filter((p) => !isNaN(p));
+    .filter((p) => !isNaN(p) && p > 0);
 
   const totalInventory = variants.reduce(
     (sum, v) => sum + (v.inventoryQuantity || 0),
@@ -156,20 +194,25 @@ export function normalizeShopifyProduct(product) {
 
   const availableForSale = variants.some((v) => v.availableForSale);
 
-  const attributes = buildProductAttributes(product, variants, metafields);
+  const attributes = buildProductAttributes({
+    product,
+    variants,
+    metafields,
+    options: product.options || [],
+  });
 
   return {
     shopifyGraphqlId: product.id,
     shopifyProductId: extractShopifyId(product.id),
 
-    title: product.title,
-    handle: product.handle,
-    description: product.description,
-    bodyHtml: product.descriptionHtml,
-    vendor: product.vendor,
-    productType: product.productType,
+    title: product.title || "",
+    handle: product.handle || null,
+    description: product.description || null,
+    bodyHtml: product.descriptionHtml || null,
+    vendor: product.vendor || null,
+    productType: product.productType || null,
     tags: product.tags || [],
-    status: product.status,
+    status: product.status || null,
 
     minPrice: prices.length ? Math.min(...prices) : 0,
     maxPrice: prices.length ? Math.max(...prices) : 0,
@@ -194,15 +237,90 @@ export function normalizeShopifyProduct(product) {
   };
 }
 
-export function normalizeMetafields(metafields) {
-  const result = {};
+export function normalizeWebhookProduct(product) {
+  const variants = product.variants || [];
+  const images = product.images || [];
+  const metafields = product.metafields || []; // usually not included in webhook unless fetched separately
+  const options = product.options || [];
 
-  for (const field of metafields) {
-    const key = `${field.namespace}.${field.key}`;
-    result[key] = field.value;
-  }
+  const prices = variants
+    .map((v) => parseFloat(v.price || 0))
+    .filter((p) => !isNaN(p));
 
-  return result;
+  const comparePrices = variants
+    .map((v) => parseFloat(v.compare_at_price || 0))
+    .filter((p) => !isNaN(p) && p > 0);
+
+  const totalInventory = variants.reduce(
+    (sum, v) => sum + (v.inventory_quantity || 0),
+    0,
+  );
+
+  const availableForSale = variants.some((v) => v.available);
+
+  const normalizedVariants = variants.map((variant) => ({
+    ...variant,
+    selectedOptions: [
+      variant.option1 && options[0]?.name
+        ? { name: options[0].name, value: variant.option1 }
+        : null,
+      variant.option2 && options[1]?.name
+        ? { name: options[1].name, value: variant.option2 }
+        : null,
+      variant.option3 && options[2]?.name
+        ? { name: options[2].name, value: variant.option3 }
+        : null,
+    ].filter(Boolean),
+  }));
+
+  const attributes = buildProductAttributes({
+    product,
+    variants: normalizedVariants,
+    metafields,
+    options,
+  });
+
+  return {
+    shopifyGraphqlId: product.admin_graphql_api_id || null,
+    shopifyProductId: extractShopifyId(product.id),
+
+    title: product.title || "",
+    handle: product.handle || null,
+    description: product.body_html || null,
+    bodyHtml: product.body_html || null,
+    vendor: product.vendor || null,
+    productType: product.product_type || null,
+    tags: Array.isArray(product.tags)
+      ? product.tags
+      : typeof product.tags === "string"
+        ? product.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [],
+    status: product.status || null,
+
+    minPrice: prices.length ? Math.min(...prices) : 0,
+    maxPrice: prices.length ? Math.max(...prices) : 0,
+    compareAtMinPrice: comparePrices.length ? Math.min(...comparePrices) : null,
+    compareAtMaxPrice: comparePrices.length ? Math.max(...comparePrices) : null,
+
+    availableForSale,
+    totalInventory,
+
+    featuredImage: product.image?.src || images[0]?.src || null,
+    images,
+
+    options,
+    variants: normalizedVariants,
+
+    attributes,
+    metafields: normalizeMetafields(metafields),
+
+    publishedAt: product.published_at ? new Date(product.published_at) : null,
+    createdAtShopify: product.created_at ? new Date(product.created_at) : null,
+    updatedAtShopify: product.updated_at ? new Date(product.updated_at) : null,
+  };
 }
 
 export async function fetchProductsBatch(admin, cursor = null) {

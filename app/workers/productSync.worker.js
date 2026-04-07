@@ -7,7 +7,7 @@ import {
   removeProductFromFilters,
   updateFiltersForProductChange,
 } from "../services/filter.service.js";
-import { normalizeShopifyProduct } from "../services/product.service.js";
+import { normalizeWebhookProduct } from "../services/product.service.js";
 
 const worker = new Worker(
   "product-sync",
@@ -103,7 +103,7 @@ const worker = new Worker(
       case "webhook-product-create": {
         const { product } = job.data;
 
-        const newProduct = normalizeShopifyProduct(product);
+        const newProduct = normalizeWebhookProduct(product);
 
         const Product = await prisma.product.create({
           data: { storeId: store.id, ...newProduct },
@@ -126,7 +126,7 @@ const worker = new Worker(
           },
         });
 
-        const normalized = normalizeShopifyProduct(product);
+        const normalized = normalizeWebhookProduct(product);
 
         const newProduct = await prisma.product.update({
           where: {
@@ -149,8 +149,8 @@ const worker = new Worker(
         const product = await prisma.product.findUnique({
           where: {
             storeId_shopifyProductId: {
-              shopifyProductId: productId.toString(),
               storeId: store.id,
+              shopifyProductId: productId.toString(),
             },
           },
         });
@@ -158,8 +158,8 @@ const worker = new Worker(
         await prisma.product.delete({
           where: {
             storeId_shopifyProductId: {
-              shopifyProductId: productId.toString(),
               storeId: store.id,
+              shopifyProductId: productId.toString(),
             },
           },
         });

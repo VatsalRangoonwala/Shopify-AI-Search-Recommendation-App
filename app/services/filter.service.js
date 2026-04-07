@@ -182,6 +182,7 @@ export async function updateFiltersForProductChange(oldProduct, newProduct) {
       }
     }
   }
+  return;
 }
 
 export async function decrementFilterValue(storeId, key, value) {
