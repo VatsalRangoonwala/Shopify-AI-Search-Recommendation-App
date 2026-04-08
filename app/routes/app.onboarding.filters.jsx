@@ -11,6 +11,12 @@ import {
   Box,
 } from "@shopify/polaris";
 import OnboardingLayout from "../components/onboarding/OnboardingLayout";
+import { requireOnboarding } from "../utils/onboarding-guard.js";
+
+export const loader = async ({ request }) => {
+  await requireOnboarding(request);
+  return null;
+};
 
 const Filters = () => {
   const navigate = useNavigate();
@@ -112,7 +118,7 @@ const Filters = () => {
                     label={filter.label}
                     helpText={filter.description}
                     checked={filter.checked}
-                    disabled={!filter.enabled}
+                    // disabled={!filter.enabled}
                     onChange={() => toggleFilter(filter.id)}
                   />
                 </InlineStack>

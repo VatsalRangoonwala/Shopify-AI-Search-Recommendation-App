@@ -1,123 +1,103 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { Page, Banner, ContextualSaveBar, BlockStack } from "@shopify/polaris";
-import SearchSettings from "../components/settings/SearchSettings.jsx";
-import RecommendationSettings from "../components/settings/RecommendationSettings.jsx";
-import AISettings from "../components/settings/AISettings.jsx";
+import { Page, BlockStack } from "@shopify/polaris";
+import { useFetcher, useLoaderData } from "react-router";
 import FilterSettings from "../components/settings/FilterSettings.jsx";
 import SortingSettings from "../components/settings/SortingSettings.jsx";
 import DangerZone from "../components/settings/DangerZone.jsx";
+import prisma from "../db.server.js";
+import { authenticate } from "../shopify.server.js";
+import { seedSorting } from "../services/sorting.seed.js";
 
-const defaultState = {
-  searchEnabled: true,
-  searchMode: "ai",
-  typoTolerance: true,
-  maxResults: "20",
-  recsEnabled: true,
-  recTypes: {
-    relatedProducts: true,
-    trending: true,
-    recentlyViewed: false,
-  },
-  maxRecs: "8",
-  aiEnabled: true,
-  intentSearch: true,
-  smartRecs: true,
-  aiMode: "balanced",
-  fallback: "trending",
-  filtersEnabled: true,
-  filterUI: "checkbox",
-  multiSelect: true,
-  collapseFilters: false,
-  sortingEnabled: true,
-  defaultSort: "popularity",
-  sortOptionsEnabled: {
-    price_asc: true,
-    price_desc: true,
-    newest: true,
-    popularity: true,
-  },
-  autoSync: true,
-  syncFrequency: "daily",
+export const loader = async ({ request }) => {
+  const { session } = await authenticate.admin(request);
+
+  const store = await prisma.store.findUnique({
+    where: { shop: session.shop },
+  });
+
+  if (!store) {
+    return { sorting: [] };
+  }
+
+  await seedSorting(session.shop);
+
+  const sorting = await prisma.sorting.findMany({
+    where: { storeId: store.id },
+    orderBy: { position: "asc" },
+  });
+
+  return { sorting };
+};
+
+export const action = async ({ request }) => {
+  const { session } = await authenticate.admin(request);
+  const body = await request.json();
+
+  const store = await prisma.store.findUnique({
+    where: { shop: session.shop },
+  });
+
+  if (!store) {
+    return { success: false, error: "Store not found" };
+  }
+
+  await seedSorting(session.shop);
+
+  const sortOrder = Array.isArray(body?.sortOrder) ? body.sortOrder : [];
+  const sortOptionsEnabled = body?.sortOptionsEnabled ?? {};
+  const defaultSort =
+    typeof body?.defaultSort === "string" ? body.defaultSort : sortOrder[0];
+
+  if (sortOrder.length === 0) {
+    return { success: false, error: "Invalid sorting payload" };
+  }
+
+  const orderedSorts = [
+    defaultSort,
+    ...sortOrder.filter((sortId) => sortId !== defaultSort),
+  ];
+
+  await prisma.$transaction(
+    orderedSorts.map((sortId, index) =>
+      prisma.sorting.updateMany({
+        where: {
+          storeId: store.id,
+          name: sortId,
+        },
+        data: {
+          position: index + 1,
+          isActive: Boolean(sortOptionsEnabled[sortId]),
+        },
+      }),
+    ),
+  );
+
+  return { success: true };
 };
 
 export default function Settings() {
-  const [state, setState] = useState(defaultState);
-  const [saved, setSaved] = useState(defaultState);
-  const [toast, setToast] = useState(null);
+  const { sorting } = useLoaderData();
+  const fetcher = useFetcher();
 
-  const isDirty = useMemo(
-    () => JSON.stringify(state) !== JSON.stringify(saved),
-    [state, saved],
-  );
-
-  const onChange = useCallback((key, value) => {
-    setState((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  const handleSave = useCallback(() => {
-    setSaved(state);
-    setToast("Settings saved successfully!");
-    setTimeout(() => setToast(null), 3000);
-  }, [state]);
-
-  const handleDiscard = useCallback(() => {
-    setState(saved);
-  }, [saved]);
-
-  const handleSync = useCallback(() => {
-    setToast("Sync started…");
-    setTimeout(() => setToast(null), 3000);
-  }, []);
-
-  const handleDanger = useCallback((action) => {
-    const messages = {
-      reset: "All settings have been reset.",
-      disconnect: "Store disconnected.",
-      delete: "All data deleted.",
-    };
-
-    if (
-      window.confirm(
-        `Are you sure you want to ${action}? This cannot be undone.`,
-      )
-    ) {
-      if (action === "reset") {
-        setState(defaultState);
-        setSaved(defaultState);
-      }
-      setToast(messages[action]);
-      setTimeout(() => setToast(null), 3000);
-    }
-  }, []);
+  const handleSaveSorting = (state) => {
+    fetcher.submit(JSON.stringify(state), {
+      method: "post",
+      encType: "application/json",
+    });
+  };
 
   return (
-    <>
-      {isDirty && (
-        <ContextualSaveBar
-          message="Unsaved changes"
-          saveAction={{ onAction: handleSave, content: "Save" }}
-          discardAction={{ onAction: handleDiscard, content: "Discard" }}
+    <Page title="Settings" fullWidth>
+      <BlockStack gap="400">
+        <FilterSettings />
+
+        <SortingSettings
+          initialState={sorting}
+          onSave={handleSaveSorting}
+          loading={fetcher.state === "submitting"}
         />
-      )}
 
-      <Page title="Settings" fullWidth>
-        <div style={{ width: "100%" }}>
-          <BlockStack gap="400">
-            {toast && (
-              <Banner tone="success" onDismiss={() => setToast(null)}>
-                <p>{toast}</p>
-              </Banner>
-            )}
-
-            {/* <SearchSettings state={state} onChange={onChange} /> */}
-            {/* <RecommendationSettings state={state} onChange={onChange} /> */}
-            {/* <AISettings state={state} onChange={onChange} /> */}
-            <FilterSettings state={state} onChange={onChange} />
-            <SortingSettings state={state} onChange={onChange} />
-            <DangerZone onAction={handleDanger} />
-          </BlockStack>
-        </div>
-      </Page>
-    </>
+        <DangerZone />
+      </BlockStack>
+    </Page>
   );
 }

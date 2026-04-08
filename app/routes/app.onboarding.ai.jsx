@@ -2,6 +2,12 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { Card, Text, BlockStack, Button, Box, InlineStack, Divider } from "@shopify/polaris";
 import OnboardingLayout from "../components/onboarding/OnboardingLayout";
+import { requireOnboarding } from "../utils/onboarding-guard.js";
+
+export const loader = async ({ request }) => {
+  await requireOnboarding(request);
+  return null;
+};
 
 const initialFeatures = [
   {

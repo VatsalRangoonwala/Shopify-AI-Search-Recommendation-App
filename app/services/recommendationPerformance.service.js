@@ -1,7 +1,6 @@
 import prisma from "../db.server.js";
 
 export async function getRecommendationPerformance(storeId) {
-
   const events = await prisma.event.findMany({
     where: {
       storeId,
@@ -14,7 +13,6 @@ export async function getRecommendationPerformance(storeId) {
       productId: true,
     },
   });
-
 
   const productMap = {};
 
@@ -40,31 +38,30 @@ export async function getRecommendationPerformance(storeId) {
 
   const products = await prisma.product.findMany({
     where: {
-      id: { in: productIds },
+      shopifyProductId: { in: productIds },
     },
     select: {
-      id: true,
+      shopifyProductId: true,
       title: true,
     },
   });
 
   const productTitleMap = {};
   products.forEach((p) => {
-    productTitleMap[p.id] = p.title;
+    productTitleMap[p.shopifyProductId] = p.title;
   });
 
   const result = Object.values(productMap).map((p) => {
     const ctr =
-      p.impressions > 0
-        ? ((p.clicks / p.impressions) * 100).toFixed(1)
-        : "0";
+      p.impressions > 0 ? ((p.clicks / p.impressions) * 100).toFixed(1) : "0";
 
     let performance = "average";
     if (ctr >= 15) performance = "high";
     else if (ctr < 5) performance = "low";
+    console.log(productTitleMap);
 
     return {
-      name: productTitleMap[p.productId] || "Unknown Product",
+      name: productTitleMap[p.productId] || p.productId || "Unknown Product",
       impressions: p.impressions,
       clicks: p.clicks,
       ctr: ctr + "%",

@@ -10,6 +10,13 @@ import {
 } from "@shopify/polaris";
 import OnboardingLayout from "../components/onboarding/OnboardingLayout";
 
+import { requireOnboarding } from "../utils/onboarding-guard.js";
+
+export const loader = async ({ request }) => {
+  await requireOnboarding(request);
+  return null;
+};
+
 const Sync = () => {
   const navigate = useNavigate();
 

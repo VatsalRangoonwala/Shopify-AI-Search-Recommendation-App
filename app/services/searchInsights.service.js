@@ -10,7 +10,6 @@ export async function getSearchInsights(storeId) {
     },
   });
 
- 
   const productMap = {};
 
   events.forEach((e) => {
@@ -30,33 +29,32 @@ export async function getSearchInsights(storeId) {
 
   const productIds = Object.keys(productMap);
 
-  const products = await prisma.product.findMany({
-    where: {
-      id: { in: productIds },
-    },
-    select: {
-      id: true,
-      title: true,
-    },
-  });
+ const products = await prisma.product.findMany({
+  where: {
+    shopifyProductId: { in: productIds },
+  },
+  select: {
+    shopifyProductId: true,
+    title: true,
+  },
+});
 
-  const productTitleMap = {};
-  products.forEach((p) => {
-    productTitleMap[p.id] = p.title;
-  });
+const productTitleMap = {};
+products.forEach((p) => {
+  productTitleMap[p.shopifyProductId] = p.title;
+});
 
   const result = Object.values(productMap).map((p) => {
     const clickRate =
       p.views > 0 ? ((p.clicks / p.views) * 100).toFixed(1) + "%" : "0%";
 
     return {
-      query: productTitleMap[p.productId] || "Unknown Product",
+      query: productTitleMap[p.productId] || p.productId || "Unknown Product",
       results: p.searches,
       clickRate,
       status: p.searches > 0 ? "ok" : "no-results",
     };
   });
-
 
   return result.sort((a, b) => b.results - a.results).slice(0, 10);
 }

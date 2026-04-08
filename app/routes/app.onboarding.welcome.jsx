@@ -1,14 +1,35 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { Card, Text, BlockStack, Button, InlineStack, Icon, Box, Divider } from "@shopify/polaris";
-import { SearchIcon, AutomationIcon, ChartVerticalFilledIcon } from "@shopify/polaris-icons";
-import OnboardingLayout from "../components/onboarding/OnboardingLayout";
+import {
+  Card,
+  Text,
+  BlockStack,
+  Button,
+  InlineStack,
+  Icon,
+  Box,
+  Divider,
+} from "@shopify/polaris";
+import {
+  SearchIcon,
+  AutomationIcon,
+  ChartVerticalFilledIcon,
+} from "@shopify/polaris-icons";
+import OnboardingLayout from "../components/onboarding/OnboardingLayout.jsx";
+
+import { requireOnboarding } from "../utils/onboarding-guard.js";
+
+export const loader = async ({ request }) => {
+  await requireOnboarding(request);
+  return null;
+};
 
 const features = [
   {
     icon: SearchIcon,
     title: "Sync Your Products",
-    description: "We'll import your product catalog and prepare it for AI-powered search.",
+    description:
+      "We'll import your product catalog and prepare it for AI-powered search.",
   },
   {
     icon: AutomationIcon,
@@ -34,8 +55,9 @@ const Welcome = () => {
               Welcome to AI Search & Discovery
             </Text>
             <Text variant="bodyLg" as="p" tone="subdued">
-              Let's get your store set up with intelligent search, smart recommendations,
-              and AI-powered product discovery. This takes about 5 minutes.
+              Let's get your store set up with intelligent search, smart
+              recommendations, and AI-powered product discovery. This takes
+              about 5 minutes.
             </Text>
           </BlockStack>
 
@@ -43,7 +65,12 @@ const Welcome = () => {
 
           <BlockStack gap="500">
             {features.map((feature, index) => (
-              <InlineStack key={index} gap="400" blockAlign="start" wrap={false}>
+              <InlineStack
+                key={index}
+                gap="400"
+                blockAlign="start"
+                wrap={false}
+              >
                 <Box
                   background="bg-fill-info-secondary"
                   borderRadius="200"
@@ -64,7 +91,11 @@ const Welcome = () => {
           </BlockStack>
 
           <Box paddingBlockStart="400">
-            <Button variant="primary" size="large" onClick={() => navigate("/app/onboarding/data-quality")}>
+            <Button
+              variant="primary"
+              size="large"
+              onClick={() => navigate("/app/onboarding/data-quality")}
+            >
               Start Setup
             </Button>
           </Box>

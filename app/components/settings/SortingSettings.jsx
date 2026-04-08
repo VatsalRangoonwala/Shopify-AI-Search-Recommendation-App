@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
   Text,
@@ -11,8 +11,6 @@ import {
   Icon,
 } from "@shopify/polaris";
 import { DragHandleIcon } from "@shopify/polaris-icons";
-
-// DND KIT
 import {
   DndContext,
   closestCenter,
@@ -21,7 +19,6 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-
 import {
   SortableContext,
   useSortable,
@@ -29,19 +26,116 @@ import {
   arrayMove,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
-
 import { CSS } from "@dnd-kit/utilities";
 
 const sortOptionsList = [
-  { id: "price_asc", label: "Price: Low → High" },
-  { id: "price_desc", label: "Price: High → Low" },
-  { id: "newest", label: "Newest" },
-  { id: "popularity", label: "Popularity" },
+  { id: "id_asc", label: "Featured" },
+  { id: "price_asc", label: "Price: Low to High" },
+  { id: "price_desc", label: "Price: High to Low" },
+  { id: "created_at_desc", label: "Newest" },
+  { id: "title_asc", label: "A-Z" },
+  { id: "title_desc", label: "Z-A" },
 ];
 
+const legacySortIdMap = {
+  newest: "created_at_desc",
+  popularity: "id_asc",
+};
 
-// 🔹 Sortable Item
-function SortableItem({ option, enabled, defaultSort, onToggle, onDefault }) {
+const defaultSortingState = {
+  sortOptionsEnabled: sortOptionsList.reduce((acc, option) => {
+    acc[option.id] = true;
+    return acc;
+  }, {}),
+  sortOrder: sortOptionsList.map((option) => option.id),
+  defaultSort: "id_asc",
+};
+
+const sortOptionsById = sortOptionsList.reduce((lookup, option) => {
+  lookup[option.id] = option;
+  return lookup;
+}, {});
+
+function normalizeSortId(id) {
+  return legacySortIdMap[id] ?? id;
+}
+
+function buildSortOrder(ids = []) {
+  const seen = new Set();
+
+  return [...ids, ...defaultSortingState.sortOrder]
+    .map(normalizeSortId)
+    .filter((id) => {
+      if (!sortOptionsById[id] || seen.has(id)) {
+        return false;
+      }
+
+      seen.add(id);
+      return true;
+    });
+}
+
+function buildStateFromSortingRows(rows) {
+  const normalizedRows = Array.isArray(rows) ? rows : [];
+  const sortOptionsEnabled = { ...defaultSortingState.sortOptionsEnabled };
+
+  normalizedRows.forEach((row) => {
+    const sortId = normalizeSortId(row.name);
+
+    if (sortOptionsById[sortId]) {
+      sortOptionsEnabled[sortId] = Boolean(row.isActive);
+    }
+  });
+
+  const sortOrder = buildSortOrder(normalizedRows.map((row) => row.name));
+  const defaultSort =
+    sortOrder.find((id) => sortOptionsEnabled[id]) ?? defaultSortingState.defaultSort;
+
+  return {
+    sortOptionsEnabled,
+    sortOrder,
+    defaultSort,
+  };
+}
+
+function normalizeSortingState(state) {
+  if (Array.isArray(state)) {
+    return buildStateFromSortingRows(state);
+  }
+
+  const nextState = state ?? {};
+  const incomingEnabled = Object.entries(nextState.sortOptionsEnabled ?? {}).reduce(
+    (acc, [id, enabled]) => {
+      const normalizedId = normalizeSortId(id);
+
+      if (sortOptionsById[normalizedId]) {
+        acc[normalizedId] = Boolean(enabled);
+      }
+
+      return acc;
+    },
+    {},
+  );
+
+  const sortOptionsEnabled = {
+    ...defaultSortingState.sortOptionsEnabled,
+    ...incomingEnabled,
+  };
+
+  const sortOrder = buildSortOrder(nextState.sortOrder ?? Object.keys(incomingEnabled));
+  const requestedDefaultSort = normalizeSortId(nextState.defaultSort);
+  const defaultSort = sortOptionsEnabled[requestedDefaultSort]
+    ? requestedDefaultSort
+    : sortOrder.find((id) => sortOptionsEnabled[id]) ?? defaultSortingState.defaultSort;
+
+  return {
+    sortOptionsEnabled,
+    sortOrder,
+    defaultSort,
+  };
+}
+
+function SortableItem({ option, defaultSort, onToggle, onDefault }) {
   const {
     attributes,
     listeners,
@@ -60,12 +154,13 @@ function SortableItem({ option, enabled, defaultSort, onToggle, onDefault }) {
     <div ref={setNodeRef} style={style}>
       <Box
         padding="300"
-        background={isDragging ? "bg-surface-brand-selected" : "bg-surface-secondary"}
+        background={
+          isDragging ? "bg-surface-brand-selected" : "bg-surface-secondary"
+        }
         borderRadius="200"
       >
         <InlineStack align="space-between" blockAlign="center">
           <InlineStack gap="300" blockAlign="center">
-            {/* Drag Handle */}
             <div {...attributes} {...listeners} style={{ cursor: "grab" }}>
               <Icon source={DragHandleIcon} tone="subdued" />
             </div>
@@ -79,10 +174,12 @@ function SortableItem({ option, enabled, defaultSort, onToggle, onDefault }) {
               labelHidden
               checked={defaultSort === option.id}
               onChange={() => onDefault(option.id)}
+              disabled={!option.enabled}
+              name="defaultSort"
             />
 
             <Button variant="plain" onClick={() => onToggle(option.id)}>
-              {enabled ? "Enabled" : "Disabled"}
+              {option.enabled ? "Enabled" : "Disabled"}
             </Button>
           </InlineStack>
         </InlineStack>
@@ -91,81 +188,113 @@ function SortableItem({ option, enabled, defaultSort, onToggle, onDefault }) {
   );
 }
 
+export default function SortingSettings({
+  initialState,
+  onSave,
+  loading = false,
+}) {
+  const [localState, setLocalState] = useState(() =>
+    normalizeSortingState(initialState),
+  );
+  const [initialSnapshot, setInitialSnapshot] = useState(() =>
+    JSON.stringify(normalizeSortingState(initialState)),
+  );
 
-// 🔹 Main Component
-export default function SortingSettings({ state, onChange }) {
+  useEffect(() => {
+    const normalized = normalizeSortingState(initialState);
+    setLocalState(normalized);
+    setInitialSnapshot(JSON.stringify(normalized));
+  }, [initialState]);
 
-  // Convert state → ordered list
+  const isDirty = useMemo(() => {
+    return JSON.stringify(localState) !== initialSnapshot;
+  }, [initialSnapshot, localState]);
+
   const options = useMemo(() => {
-    return sortOptionsList.map((opt) => ({
-      ...opt,
-      enabled: state.sortOptionsEnabled[opt.id],
+    return localState.sortOrder.map((id) => ({
+      ...sortOptionsById[id],
+      enabled: Boolean(localState.sortOptionsEnabled[id]),
     }));
-  }, [state.sortOptionsEnabled]);
+  }, [localState]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
-  // 🔹 Toggle enable/disable
+  const updateState = (updates) => {
+    setLocalState((previousState) =>
+      normalizeSortingState({ ...previousState, ...updates }),
+    );
+  };
+
   const toggleOption = (id) => {
-    onChange("sortOptionsEnabled", {
-      ...state.sortOptionsEnabled,
-      [id]: !state.sortOptionsEnabled[id],
-    });
+    const sortOptionsEnabled = {
+      ...localState.sortOptionsEnabled,
+      [id]: !localState.sortOptionsEnabled[id],
+    };
+
+    const defaultSort = sortOptionsEnabled[localState.defaultSort]
+      ? localState.defaultSort
+      : localState.sortOrder.find((optionId) => sortOptionsEnabled[optionId]) ??
+        defaultSortingState.defaultSort;
+
+    updateState({ sortOptionsEnabled, defaultSort });
   };
 
-  // 🔹 Change default sort
   const setDefault = (id) => {
-    onChange("defaultSort", id);
+    if (!localState.sortOptionsEnabled[id]) {
+      return;
+    }
+
+    updateState({ defaultSort: id });
   };
 
-  // 🔹 Handle drag
   const handleDragEnd = (event) => {
     const { active, over } = event;
 
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      return;
+    }
 
-    const oldIndex = options.findIndex((i) => i.id === active.id);
-    const newIndex = options.findIndex((i) => i.id === over.id);
+    const oldIndex = options.findIndex((option) => option.id === active.id);
+    const newIndex = options.findIndex((option) => option.id === over.id);
 
-    const newOrder = arrayMove(options, oldIndex, newIndex);
-
-    // 🔥 IMPORTANT: Save order if needed (optional backend)
-    // For now just re-map enabled state
-    const updated = {};
-    newOrder.forEach((item) => {
-      updated[item.id] = state.sortOptionsEnabled[item.id];
+    updateState({
+      sortOrder: arrayMove(localState.sortOrder, oldIndex, newIndex),
     });
+  };
 
-    onChange("sortOptionsEnabled", updated);
+  const handleSave = () => {
+    if (typeof onSave !== "function") {
+      return;
+    }
+
+    onSave(localState);
   };
 
   return (
     <Card>
       <BlockStack gap="500">
-        
-        {/* Header */}
         <BlockStack gap="200">
           <Text variant="headingMd">Sorting Settings</Text>
           <Text tone="subdued">
-            Drag to reorder sorting priority. Enable or disable options and choose default.
+            Drag to reorder sorting priority. Enable or disable options and
+            choose default.
           </Text>
         </BlockStack>
 
         <Divider />
 
-        {/* Drag List */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={options.map((o) => o.id)}
+            items={options.map((option) => option.id)}
             strategy={verticalListSortingStrategy}
           >
             <BlockStack gap="200">
@@ -173,8 +302,7 @@ export default function SortingSettings({ state, onChange }) {
                 <SortableItem
                   key={option.id}
                   option={option}
-                  enabled={option.enabled}
-                  defaultSort={state.defaultSort}
+                  defaultSort={localState.defaultSort}
                   onToggle={toggleOption}
                   onDefault={setDefault}
                 />
@@ -183,10 +311,20 @@ export default function SortingSettings({ state, onChange }) {
           </SortableContext>
         </DndContext>
 
+        {isDirty && (
+          <Box paddingBlockStart="200">
+            <InlineStack align="space-between">
+              <Text tone="subdued">Unsaved changes</Text>
+              <Button variant="primary" onClick={handleSave} loading={loading}>
+                Save
+              </Button>
+            </InlineStack>
+          </Box>
+        )}
+
         <Text tone="subdued" variant="bodySm">
           Select default sorting and reorder how options appear to customers.
         </Text>
-
       </BlockStack>
     </Card>
   );

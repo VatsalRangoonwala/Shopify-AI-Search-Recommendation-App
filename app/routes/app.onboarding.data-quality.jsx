@@ -16,6 +16,12 @@ import WarningBanner from "../components/data-quality/WarningBanner.jsx";
 import StatusSummary from "../components/data-quality/StatusSummary.jsx";
 import DataIssues from "../components/data-quality/Dataissues.jsx";
 import WeightModel from "../components/data-quality/Weightmodel.jsx";
+import { requireOnboarding } from "../utils/onboarding-guard.js";
+
+export const loader = async ({ request }) => {
+  await requireOnboarding(request);
+  return null;
+};
 
 const DataQualityPage = () => {
   const navigate = useNavigate();

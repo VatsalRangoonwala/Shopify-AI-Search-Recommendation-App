@@ -42,20 +42,16 @@ const Topbar = ({ onNavigationToggle, sidebarVisible, store }) => {
     </button>
   );
 
+  const getShopName = (shop) => {
+    if (!shop) return "";
+    return shop.replace(".myshopify.com", "");
+  };
+
   const userMenuMarkup = (
     <TopBar.UserMenu
-      actions={[
-        {
-          items: [
-            { content: "Account Settings" },
-            { content: "Help Center" },
-            { content: "Log out" },
-          ],
-        },
-      ]}
-      name={store?.name || "Store"}
-      detail={store?.shop || ""}
-      initials={getInitials(store?.name)}
+      name={store?.name || getShopName(store?.shop) || "Store"}
+      detail={store?.shop}
+      initials={getInitials(store?.name || getShopName(store?.shop))}
       open={userMenuOpen}
       onToggle={toggleUserMenu}
     />
@@ -67,3 +63,4 @@ const Topbar = ({ onNavigationToggle, sidebarVisible, store }) => {
 };
 
 export default Topbar;
+

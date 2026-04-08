@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, Banner, ButtonGroup, Button } from "@shopify/polaris";
 
-export default function DangerZone({ onAction }) {
+export default function DangerZone() {
   return (
     <Card>
       <div style={{ padding: "16px" }}>
@@ -15,13 +15,13 @@ export default function DangerZone({ onAction }) {
           <p>Resetting settings, disconnecting your store, or deleting data is permanent. Make sure you understand the consequences before proceeding.</p>
         </Banner>
         <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 12 }}>
-          <Button variant="primary" tone="critical" onClick={() => onAction("reset")}>
+          <Button variant="primary" tone="critical" >
             Reset All Settings
           </Button>
-          <Button variant="primary" tone="critical" onClick={() => onAction("disconnect")}>
+          <Button variant="primary" tone="critical" >
             Disconnect Store
           </Button>
-          <Button variant="primary" tone="critical" onClick={() => onAction("delete")}>
+          <Button variant="primary" tone="critical">
             Delete All Data
           </Button>
         </div>

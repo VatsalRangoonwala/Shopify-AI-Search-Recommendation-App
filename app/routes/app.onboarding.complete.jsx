@@ -2,12 +2,12 @@ import React from "react";
 import { useNavigate } from "react-router";
 import { Card, Text, BlockStack, Button, InlineStack, Icon, Box, Divider } from "@shopify/polaris";
 import { CheckCircleIcon } from "@shopify/polaris-icons";
-import OnboardingLayout from "../components/onboarding/OnboardingLayout";
+import OnboardingLayout from "../components/onboarding/OnboardingLayout.jsx";
 import prisma from "../db.server.js";
-import { authenticate } from "../shopify.server.js";
+import { requireOnboarding } from "../utils/onboarding-guard.js";
 
 export const loader = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { session } = await requireOnboarding(request);
 
   await prisma.store.updateMany({
     where: { shop: session.shop },

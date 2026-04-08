@@ -10,7 +10,8 @@ import {
   Box,
 } from "@shopify/polaris";
 
-export default function FilterSettings({ state, onChange }) {
+export default function FilterSettings() {
+  const [isSynced, setIsSynced] = useState(false);
   const [filters, setFilters] = useState([]);
   const [syncLoading, setSyncLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -30,10 +31,10 @@ export default function FilterSettings({ state, onChange }) {
         label: f.label,
         description: `${f.source} - ${f.sourceField || ""}`,
         checked: f.status === "selected",
-        enabled: f.status !== "disabled",
       }));
 
       setFilters(formatted);
+      setIsSynced(true);
     } catch (err) {
       console.error("Sync error:", err);
     } finally {
@@ -44,15 +45,10 @@ export default function FilterSettings({ state, onChange }) {
   // 🔹 Toggle filter
   const toggleFilter = (id) => {
     const updated = filters.map((f) =>
-      f.id === id ? { ...f, checked: !f.checked } : f
+      f.id === id ? { ...f, checked: !f.checked } : f,
     );
 
     setFilters(updated);
-
-    onChange(
-      "selectedFilters",
-      updated.filter((f) => f.checked).map((f) => f.id)
-    );
   };
 
   // 🔹 Save filters
@@ -60,12 +56,11 @@ export default function FilterSettings({ state, onChange }) {
     try {
       setSaveLoading(true);
 
-      const selectedFilters = filters
-        .filter((f) => f.checked)
-        .map((f) => f.id);
+      const selectedFilters = filters.filter((f) => f.checked).map((f) => f.id);
 
       if (selectedFilters.length === 0) {
         alert("Please select at least one filter");
+        setSaveLoading(false);
         return;
       }
 
@@ -89,7 +84,6 @@ export default function FilterSettings({ state, onChange }) {
   return (
     <Card>
       <BlockStack gap="500">
-
         {/* Header */}
         <BlockStack gap="200">
           <Text variant="headingMd">Filter Settings</Text>
@@ -100,25 +94,9 @@ export default function FilterSettings({ state, onChange }) {
 
         <Divider />
 
-        {/* Enable Filters */}
-        <Checkbox
-          label="Enable Filters"
-          checked={state.filtersEnabled}
-          onChange={(v) => onChange("filtersEnabled", v)}
-        />
-
-        {/* Disabled wrapper */}
-        <div
-          style={{
-            opacity: state.filtersEnabled ? 1 : 0.5,
-            pointerEvents: state.filtersEnabled ? "auto" : "none",
-          }}
-        >
-          <BlockStack gap="400">
-
-            <Divider />
-
-            {/* Sync */}
+        <BlockStack gap="400">
+          {/* Sync */}
+          {!isSynced && (
             <Button
               variant="primary"
               loading={syncLoading}
@@ -126,43 +104,41 @@ export default function FilterSettings({ state, onChange }) {
             >
               Sync Filters
             </Button>
+          )}
 
-            {/* Filters */}
-            <BlockStack gap="300">
-              {filters.length === 0 && (
-                <Text tone="subdued">No filters synced yet.</Text>
-              )}
-
-              {filters.map((filter) => (
-                <Box key={filter.id} padding="200">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Checkbox
-                      label={filter.label}
-                      helpText={filter.description}
-                      checked={filter.checked}
-                      disabled={!filter.enabled}
-                      onChange={() => toggleFilter(filter.id)}
-                    />
-                  </InlineStack>
-                </Box>
-              ))}
-            </BlockStack>
-
-            {/* ✅ Save Button */}
-            {filters.length > 0 && (
-              <Box paddingBlockStart="200">
-                <Button
-                  variant="primary"
-                  loading={saveLoading}
-                  onClick={handleSaveFilters}
-                >
-                  Save Filters
-                </Button>
-              </Box>
+          {/* Filters */}
+          <BlockStack gap="300">
+            {filters.length === 0 && (
+              <Text tone="subdued">No filters synced yet.</Text>
             )}
 
+            {filters.map((filter) => (
+              <Box key={filter.id} padding="200">
+                <InlineStack align="space-between" blockAlign="center">
+                  <Checkbox
+                    label={filter.label}
+                    helpText={filter.description}
+                    checked={filter.checked}
+                    onChange={() => toggleFilter(filter.id)}
+                  />
+                </InlineStack>
+              </Box>
+            ))}
           </BlockStack>
-        </div>
+
+          {/* ✅ Save Button */}
+          {filters.length > 0 && (
+            <Box paddingBlockStart="200">
+              <Button
+                variant="primary"
+                loading={saveLoading}
+                onClick={handleSaveFilters}
+              >
+                Save Filters
+              </Button>
+            </Box>
+          )}
+        </BlockStack>
       </BlockStack>
     </Card>
   );

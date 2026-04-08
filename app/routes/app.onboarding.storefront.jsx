@@ -10,10 +10,10 @@ import {
   List,
 } from "@shopify/polaris";
 import OnboardingLayout from "../components/onboarding/OnboardingLayout.jsx";
-import { authenticate } from "../shopify.server.js";
+import { requireOnboarding } from "../utils/onboarding-guard.js";
 
 export const loader = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { session} = await requireOnboarding(request);
   return { shop: session.shop };
 };
 

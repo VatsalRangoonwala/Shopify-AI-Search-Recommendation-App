@@ -1,12 +1,19 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLoaderData, useFetcher } from "react-router";
 import {
-  Card, Text, BlockStack, Button, InlineStack, Box, Divider, RadioButton, Icon,
+  Card,
+  Text,
+  BlockStack,
+  Button,
+  InlineStack,
+  Box,
+  Divider,
+  RadioButton,
+  Icon,
 } from "@shopify/polaris";
 import { DragHandleIcon } from "@shopify/polaris-icons";
-import OnboardingLayout from "../components/onboarding/OnboardingLayout";
-
-// Dnd-kit imports
+import OnboardingLayout from "../components/onboarding/OnboardingLayout.jsx";
+import { requireOnboarding } from "../utils/onboarding-guard.js";
 import {
   DndContext,
   closestCenter,
@@ -23,48 +30,99 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import prisma from "../db.server.js";
+import { seedSorting } from "../services/sorting.seed.js";
 
-const initialOptions = [
-  { id: "relevance", label: "Relevance", enabled: true },
-  { id: "price-asc", label: "Price: Low to High", enabled: true },
-  { id: "price-desc", label: "Price: High to Low", enabled: true },
-  { id: "newest", label: "Newest First", enabled: true },
-  { id: "bestselling", label: "Best Selling", enabled: false },
-];
+export const loader = async ({ request }) => {
+  const { store, session } = await requireOnboarding(request);
 
-// Sub-component for individual Sortable Items
-const SortableItem = ({ option, defaultOption, setDefaultOption, toggleOption }) => {
+  await seedSorting(session.shop);
+
+  const sorting = await prisma.sorting.findMany({
+    where: { storeId: store.id },
+    orderBy: { position: "asc" },
+  });
+
+  return { sorting };
+};
+
+export const action = async ({ request }) => {
+  const { store, session } = await requireOnboarding(request);
+
+  await seedSorting(session.shop);
+
+  const body = await request.json();
+  const sortOrder = Array.isArray(body?.sortOrder) ? body.sortOrder : [];
+  const sortOptionsEnabled = body?.sortOptionsEnabled ?? {};
+  const defaultSort =
+    typeof body?.defaultSort === "string" ? body.defaultSort : sortOrder[0];
+
+  if (sortOrder.length === 0) {
+    return { error: "Invalid data" };
+  }
+
+  const orderedSorts = [
+    defaultSort,
+    ...sortOrder.filter((sortId) => sortId !== defaultSort),
+  ];
+
+  await prisma.$transaction(
+    orderedSorts.map((sortId, index) =>
+      prisma.sorting.updateMany({
+        where: {
+          storeId: store.id,
+          name: sortId,
+        },
+        data: {
+          position: index + 1,
+          isActive: Boolean(sortOptionsEnabled[sortId]),
+        },
+      }),
+    ),
+  );
+
+  return { success: true };
+};
+
+const SortableItem = ({
+  option,
+  defaultOption,
+  setDefaultOption,
+  toggleOption,
+}) => {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-    isDragging
+    isDragging,
   } = useSortable({ id: option.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 1 : 0,
-    position: 'relative',
+    position: "relative",
   };
 
   return (
     <div ref={setNodeRef} style={style}>
       <Box
         padding="300"
-        background={isDragging ? "bg-surface-brand-selected" : "bg-surface-secondary"}
+        background={
+          isDragging ? "bg-surface-brand-selected" : "bg-surface-secondary"
+        }
         borderRadius="200"
         shadow={isDragging ? "shadow-600" : "none"}
       >
         <InlineStack align="space-between" blockAlign="center" wrap={false}>
           <InlineStack gap="300" blockAlign="center" wrap={false}>
             {/* The drag handle specifically gets the listeners */}
-            <div 
-              {...attributes} 
-              {...listeners} 
-              style={{ cursor: "grab", color: "#8c9196", display: 'flex' }}
+            <div
+              {...attributes}
+              {...listeners}
+              style={{ cursor: "grab", color: "#8c9196", display: "flex" }}
             >
               <Icon source={DragHandleIcon} tone="subdued" />
             </div>
@@ -72,19 +130,17 @@ const SortableItem = ({ option, defaultOption, setDefaultOption, toggleOption })
               {option.label}
             </Text>
           </InlineStack>
-          
+
           <InlineStack gap="400" blockAlign="center">
-            {/* <RadioButton
+            <RadioButton
               label="Default"
               labelHidden
               checked={defaultOption === option.id}
               onChange={() => setDefaultOption(option.id)}
+              disabled={!option.enabled}
               name="defaultSort"
-            /> */}
-            <Button
-              variant="plain"
-              onClick={() => toggleOption(option.id)}
-            >
+            />
+            <Button variant="plain" onClick={() => toggleOption(option.id)}>
               {option.enabled ? "Enabled" : "Disabled"}
             </Button>
           </InlineStack>
@@ -96,22 +152,59 @@ const SortableItem = ({ option, defaultOption, setDefaultOption, toggleOption })
 
 const Sorting = () => {
   const navigate = useNavigate();
-  const [options, setOptions] = useState(initialOptions);
-  const [defaultOption, setDefaultOption] = useState("relevance");
+  const { sorting } = useLoaderData();
+  const fetcher = useFetcher();
+  const [options, setOptions] = useState(() =>
+    sorting.map((sort) => ({
+      id: sort.name,
+      label: sort.label,
+      enabled: sort.isActive,
+    })),
+  );
+  const [defaultOption, setDefaultOption] = useState(
+    () => sorting.find((sort) => sort.isActive)?.name ?? sorting[0]?.name,
+  );
+
+  useEffect(() => {
+    const nextOptions = sorting.map((sort) => ({
+      id: sort.name,
+      label: sort.label,
+      enabled: sort.isActive,
+    }));
+
+    setOptions(nextOptions);
+    setDefaultOption(
+      sorting.find((sort) => sort.isActive)?.name ?? sorting[0]?.name,
+    );
+  }, [sorting]);
 
   // Sensors for Drag and Drop
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const toggleOption = (id) => {
     setOptions((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, enabled: !o.enabled } : o))
+      prev.map((o) => (o.id === id ? { ...o, enabled: !o.enabled } : o)),
     );
   };
+
+  useEffect(() => {
+    const currentDefault = options.find((option) => option.id === defaultOption);
+
+    if (currentDefault?.enabled) {
+      return;
+    }
+
+    const fallbackDefault = options.find((option) => option.enabled)?.id;
+
+    if (fallbackDefault && fallbackDefault !== defaultOption) {
+      setDefaultOption(fallbackDefault);
+    }
+  }, [defaultOption, options]);
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
@@ -125,14 +218,41 @@ const Sorting = () => {
     }
   };
 
+  const handleSave = () => {
+    const payload = {
+      sortOrder: options.map((option) => option.id),
+      sortOptionsEnabled: Object.fromEntries(
+        options.map((option) => [option.id, option.enabled]),
+      ),
+      defaultSort: defaultOption,
+    };
+
+    fetcher.submit(
+      JSON.stringify(payload),
+      {
+        method: "post",
+        encType: "application/json",
+      },
+    );
+  };
+
+  useEffect(() => {
+    if (fetcher.data?.success) {
+      navigate("/app/onboarding/storefront");
+    }
+  }, [fetcher.data]);
+
   return (
     <OnboardingLayout currentStep={5}>
       <Card>
         <BlockStack gap="500">
           <BlockStack gap="200">
-            <Text variant="headingXl" as="h2">Sorting Options</Text>
+            <Text variant="headingXl" as="h2">
+              Sorting Options
+            </Text>
             <Text variant="bodyMd" as="p" tone="subdued">
-              Configure how customers can sort search results. Drag to reorder priority.
+              Configure how customers can sort search results. Drag to reorder
+              priority.
             </Text>
           </BlockStack>
 
@@ -143,7 +263,10 @@ const Sorting = () => {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={options} strategy={verticalListSortingStrategy}>
+            <SortableContext
+              items={options.map((option) => option.id)}
+              strategy={verticalListSortingStrategy}
+            >
               <BlockStack gap="200">
                 {options.map((option) => (
                   <SortableItem
@@ -159,12 +282,17 @@ const Sorting = () => {
           </DndContext>
 
           <Text variant="bodySm" as="p" tone="subdued">
-            Select the radio button to set the default sorting option. Toggle to enable/disable.
+            Select the radio button to set the default sorting option. Toggle to
+            enable/disable.
           </Text>
 
           <Box paddingBlockStart="200">
-            <Button variant="primary" onClick={() => navigate("/app/onboarding/storefront")}>
-              Continue
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              loading={fetcher.state === "submitting"}
+            >
+              Save & Continue
             </Button>
           </Box>
         </BlockStack>

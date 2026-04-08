@@ -2,7 +2,7 @@ import { redirect } from "react-router";
 import prisma from "../db.server.js";
 import { authenticate } from "../shopify.server.js";
 
-export const loader = async ({ request }) => {
+export async function requireOnboarding(request) {
   const { session } = await authenticate.admin(request);
 
   const store = await prisma.store.findUnique({
@@ -10,10 +10,8 @@ export const loader = async ({ request }) => {
   });
 
   if (!store?.isOnboarding) {
-    return redirect("/app");
+    throw redirect("/app");
   }
 
-  return redirect("/app/onboarding/welcome");
-};
-
-
+  return { store, session };
+}
