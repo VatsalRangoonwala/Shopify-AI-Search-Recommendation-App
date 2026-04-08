@@ -9,6 +9,8 @@ export const loader = async ({ request }) => {
     await productSyncQueue.add("filter-sync", {
       shop: session.shop,
     });
+
+    return { success: true };
   } catch (error) {
     console.error("Update Filter Error:", error);
     return jsonError("Something went wrong while updating filter", 500);

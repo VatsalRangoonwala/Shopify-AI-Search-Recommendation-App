@@ -22,7 +22,7 @@ const Filters = () => {
   const navigate = useNavigate();
   const [filters, setFilters] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [syncLoader,setSyncLoader] = useState(false)
+  const [syncLoader, setSyncLoader] = useState(false);
 
   // 🔹 Step 1 + 2 combined
   const handleSyncFilters = async () => {
@@ -30,9 +30,7 @@ const Filters = () => {
       setSyncLoader(true);
 
       // 1️⃣ Trigger background sync
-      await fetch("/api/onboarding/filters", {
-        headers: { "Content-Type": "application/json" },
-      });
+      await fetch("/api/onboarding/filters");
 
       // 2️⃣ Fetch updated filters
       const res = await fetch("/api/admin/filters");
@@ -106,7 +104,11 @@ const Filters = () => {
           <Divider />
 
           {/* 🔹 New Button */}
-          <Button variant="primary" loading={syncLoader} onClick={handleSyncFilters}>
+          <Button
+            variant="primary"
+            loading={syncLoader}
+            onClick={handleSyncFilters}
+          >
             Sync Filters
           </Button>
 

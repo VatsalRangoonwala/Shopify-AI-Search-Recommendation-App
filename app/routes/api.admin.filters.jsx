@@ -47,14 +47,11 @@ export const action = async ({ request }) => {
       },
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-      }),
+    return json(
       {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
+        success: true,
       },
+      { status: 200 },
     );
   } catch (error) {
     console.error("Update Filter Error:", error);
@@ -82,10 +79,7 @@ export const action = async ({ request }) => {
 // }
 
 export function jsonError(message, status = 400) {
-  return new Response(JSON.stringify({ success: false, error: message }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+  return json({ success: false, error: message }, { status });
 }
 
 export const loader = async ({ request }) => {

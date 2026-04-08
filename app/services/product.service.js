@@ -69,6 +69,7 @@ export function isUsefulOption(name, value) {
     "style",
     "fit",
     "length",
+    "weight",
     "capacity",
     "flavor",
     "scent",
@@ -124,7 +125,7 @@ export function buildProductAttributes({
   options = [],
 }) {
   const attributes = {};
-  
+
   const addValue = (key, value) => {
     if (!key || !value) return;
 
@@ -226,7 +227,7 @@ export function normalizeShopifyProduct(product) {
     images,
 
     options: product.options || [],
-    variants,
+    variants: variants.map((v) => ({ ...v, id: extractShopifyId(v.id) })),
 
     attributes,
     metafields: normalizeMetafields(metafields),
@@ -260,6 +261,7 @@ export function normalizeWebhookProduct(product) {
 
   const normalizedVariants = variants.map((variant) => ({
     ...variant,
+    id: extractShopifyId(variant.id),
     selectedOptions: [
       variant.option1 && options[0]?.name
         ? { name: options[0].name, value: variant.option1 }

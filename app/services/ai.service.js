@@ -6,11 +6,11 @@ const AI_BASE_URL = process.env.AI_BASE_URL;
 export async function aiSearch(shop, input) {
   const cacheKey = `ai:search:${input.query_text}`;
 
-  const cached = await getCache(cacheKey);
-  if (cached) {
-    console.log("⚡ AI search cache hit");
-    return cached;
-  }
+  // const cached = await getCache(cacheKey);
+  // if (cached) {
+  //   console.log("⚡ AI search cache hit");
+  //   return cached;
+  // }
 
   try {
     const res = await fetch(`${AI_BASE_URL}/search/${shop}`, {
@@ -23,7 +23,7 @@ export async function aiSearch(shop, input) {
 
     const data = await res.json();
 
-    await setCache(cacheKey, data, 300); // 5 min
+    // await setCache(cacheKey, data, 300); // 5 min
 
     return data;
   } catch (error) {
@@ -42,11 +42,11 @@ export async function aiRecommend(shop, input) {
   const key = JSON.stringify(input);
   const cacheKey = `ai:recommend:${Buffer.from(key).toString("base64")}`;
 
-  const cached = await getCache(cacheKey);
-  if (cached) {
-    console.log("⚡ AI recommend cache hit");
-    return cached;
-  }
+  // const cached = await getCache(cacheKey);
+  // if (cached) {
+  //   console.log("⚡ AI recommend cache hit");
+  //   return cached;
+  // }
 
   const res = await fetch(`${AI_BASE_URL}/recommend/${shop}`, {
     method: "POST",
@@ -58,7 +58,7 @@ export async function aiRecommend(shop, input) {
 
   const data = await res.json();
 
-  await setCache(cacheKey, data, 300);
+  // await setCache(cacheKey, data, 300);
 
   return data;
 }
@@ -67,11 +67,11 @@ export async function aiRecommend(shop, input) {
 export async function aiSimilar(shop, productId, input) {
   const cacheKey = `ai:similar:${productId}`;
 
-  const cached = await getCache(cacheKey);
-  if (cached) {
-    console.log("⚡ AI similar cache hit");
-    return cached;
-  }
+  // const cached = await getCache(cacheKey);
+  // if (cached) {
+  //   console.log("⚡ AI similar cache hit");
+  //   return cached;
+  // }
 
   const res = await fetch(
     `${AI_BASE_URL}/search/${shop}/similar/${productId}`,
@@ -86,7 +86,7 @@ export async function aiSimilar(shop, productId, input) {
 
   const data = await res.json();
 
-  await setCache(cacheKey, data, 600); // longer cache
+  // await setCache(cacheKey, data, 600); // longer cache
 
   return data;
 }

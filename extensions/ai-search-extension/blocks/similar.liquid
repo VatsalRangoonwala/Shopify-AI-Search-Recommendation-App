@@ -1,0 +1,275 @@
+<div class="ecom-similar-wrapper">
+  <div class="ecom-similar-container">
+    <div class="ecom-section-header">
+      <h2 class="ecom-section-title">{{ block.settings.title }}</h2>
+    </div>
+
+    <!-- Similar Products Grid -->
+    <div id="ai-similar-products-grid" class="ecom-product-grid">
+      <!-- Cards will be injected here via JS -->
+    </div>
+  </div>
+</div>
+
+<style>
+  /* --- Shared E-commerce CSS Variables --- */
+  :root {
+    --color-primary: #000000;
+    --color-secondary: #ffffff;
+    --color-text-main: #121212;
+    --color-text-light: #757575;
+    --color-border: #e0e0e0;
+    --color-bg-light: #f9f9f9;
+    --color-sale: #d90429;
+    --color-stars: #ffb800;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --transition: all 0.3s ease;
+  }
+
+  /* --- Layout --- */
+  .ecom-similar-wrapper {
+    width: 100%;
+    padding: 60px 20px;
+    background-color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  
+  .ecom-similar-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .ecom-section-header {
+    margin-bottom: 30px;
+    text-align: {{ block.settings.alignment }};
+  }
+
+  .ecom-section-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--color-text-main);
+    margin: 0;
+  }
+
+  /* --- Product Grid --- */
+  .ecom-product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  @media (min-width: 768px) {
+    .ecom-product-grid { grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  }
+  @media (min-width: 1024px) {
+    .ecom-product-grid { grid-template-columns: repeat({{ block.settings.columns_desktop }}, 1fr); gap: 30px; }
+  }
+
+  /* --- Product Cards --- */
+  .ecom-card {
+    display: flex;
+    flex-direction: column;
+    group: relative;
+    background: #fff;
+    transition: var(--transition);
+    height: 100%;
+  }
+  .ecom-card:hover .ecom-card-image img { transform: scale(1.05); }
+
+  .ecom-card-image-wrapper {
+    position: relative;
+    aspect-ratio: 4/5;
+    overflow: hidden;
+    background-color: var(--color-bg-light);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+  }
+  .ecom-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  .ecom-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--color-sale);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    z-index: 2;
+  }
+
+  .ecom-card-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .ecom-card-vendor { font-size: 0.75rem; color: var(--color-text-light); text-transform: uppercase; margin-bottom: 4px; }
+  .ecom-card-title { font-size: 1rem; font-weight: 500; color: var(--color-text-main); margin: 0 0 8px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  
+  .ecom-card-price { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 1.1rem; margin-bottom: 16px; }
+  .ecom-price-compare { text-decoration: line-through; color: var(--color-text-light); font-size: 0.9rem; font-weight: 400; }
+
+  .ecom-card-actions { display: flex; gap: 8px; margin-top: auto; }
+  .btn-primary, .btn-secondary {
+    flex: 1; padding: 10px; text-align: center; border-radius: var(--radius-sm);
+    font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: var(--transition);
+  }
+  .btn-primary { background: var(--color-primary); color: var(--color-secondary); border: 1px solid var(--color-primary); }
+  .btn-primary:hover { background: #333; }
+  .btn-secondary { background: transparent; color: var(--color-primary); border: 1px solid var(--color-border); }
+  .btn-secondary:hover { border-color: var(--color-primary); }
+</style>
+
+<script>
+  // --- Shared Utilities & Tracking ---
+  function getOrCreateSessionId() {
+    let sessionId = localStorage.getItem('ai_session_id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem('ai_session_id', sessionId);
+    }
+    return sessionId;
+  }
+
+  async function trackEvent(type, productId) {
+    try {
+      const sessionId = getOrCreateSessionId();
+      await fetch('/apps/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, productId, sessionId, shop: Shopify.shop }),
+      });
+    } catch (err) {
+      console.error('Tracking failed', err);
+    }
+  }
+
+  // --- HTML Generator for Product Cards ---
+  function createProductCardHTML(p) {
+    const comparePriceHtml = p.compareAtMaxPrice ? `<span class="ecom-price-compare">${p.compareAtMaxPrice}</span>` : '';
+    const badgeHtml = p.badge ? `<span class="ecom-badge">${p.badge}</span>` : '';
+
+    return `
+      <div class="ecom-card-image-wrapper">
+        ${badgeHtml}
+        <div class="ecom-card-image">
+          <img src="${p.featuredImage}" alt="${p.title}" loading="lazy">
+        </div>
+      </div>
+      <div class="ecom-card-info">
+        <div class="ecom-card-vendor">${p.vendor}</div>
+        <h3 class="ecom-card-title">${p.title}</h3>
+        <div class="ecom-card-price">
+          <span class="ecom-price-regular">${p.maxPrice}</span>
+          ${comparePriceHtml}
+        </div>
+        <div class="ecom-card-actions">
+          <button class="btn-primary add-btn" data-id="${p.id}">Add to Cart</button>
+          <button class="btn-secondary rec-btn" data-id="${p.id}">View</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- Fetch Similar Products ---
+  async function fetchSimilarProducts() {
+    const shop = '{{ shop.domain }}';
+    const currentProductId = '{{ product.id }}'; // Grabs the ID of the current product page
+    const limit = {{ block.settings.max_products }};
+    const sessionId = getOrCreateSessionId();
+
+    if (!currentProductId) {
+      console.warn("No product ID found. This section should be placed on a product page.");
+      return;
+    }
+
+    try {
+      // THE ACTUAL API CALL REMAINS INTACT
+      const res = await fetch(`/apps/api/similar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({ shop, productId: currentProductId, limit }),
+      });
+      const products = await res.json();
+
+      const grid = document.getElementById('ai-similar-products-grid');
+      grid.innerHTML = '';
+
+      // Loop through dummy data (swap dummyProducts for 'products' later)
+      // Slice array to respect the section settings limit
+      products.forEach((p) => {
+        const card = document.createElement('div');
+        card.className = 'ecom-card';
+        card.innerHTML = createProductCardHTML(p);
+
+        // Event Listeners for Tracking
+        card.addEventListener('click', () => trackEvent('similar_product_view', p.shopifyProductId));
+        card.querySelector('.add-btn').addEventListener('click', (e) => { 
+          e.stopPropagation(); 
+          trackEvent('add_to_cart', p.shopifyProductId); 
+        });
+        card.querySelector('.rec-btn').addEventListener('click', (e) => { 
+          e.stopPropagation(); 
+          trackEvent('similar_product_click', p.shopifyProductId); 
+        });
+
+        grid.appendChild(card);
+      });
+    } catch (err) {
+      console.error('Similar products fetch failed:', err);
+    }
+  }
+
+  // --- Initialization ---
+  document.addEventListener('DOMContentLoaded', fetchSimilarProducts);
+</script>
+
+{% schema %}
+{
+  "name": "AI Similar Products",
+  "target": "section",
+  "templates": ["product"],
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "You May Also Like"
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "Heading Alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "range",
+      "id": "max_products",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "label": "Maximum products to show",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "label": "Number of columns on desktop",
+      "default": 4
+    }
+  ]
+}
+{% endschema %}

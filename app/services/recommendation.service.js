@@ -1,19 +1,32 @@
 import prisma from "../db.server.js";
 
-export async function hydrateProducts(storeId, aiResults) {
-  const ids = aiResults.results.map(r => r.product_id.toString());
+export async function hydrateProducts(
+  storeId,
+  aiResults,
+  filterQuery,
+  sortingQuery,
+) {
+  const ids = aiResults.results.map((r) => r.product_id.toString());
 
   const products = await prisma.product.findMany({
     where: {
-      id: { in: ids },
+      shopifyProductId: { in: ids },
       storeId,
+      ...filterQuery,
     },
+    orderBy: sortingQuery,
   });
 
-  // Maintain AI ranking order
-  const map = new Map(products.map(p => [p.id, p]));
+  const normalProducts = await prisma.product.findMany({
+    where: {
+      shopifyProductId: { notIn: ids },
+      storeId,
+      ...filterQuery,
+    },
+    orderBy: sortingQuery,
+  });
 
-  return ids
-    .map(id => map.get(id))
-    .filter(Boolean);
+  const recproduct = products.map((p) => ({ ...p, isRecommended: true }));
+
+  return [...recproduct, ...normalProducts];
 }

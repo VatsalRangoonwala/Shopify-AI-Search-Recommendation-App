@@ -1,14 +1,14 @@
 import prisma from "../db.server.js";
-import { aiSearch } from "../services/ai.service.js";
+import { aiSearch, aiRecommend } from "../services/ai.service.js";
 import { hydrateProducts } from "../services/recommendation.service.js";
 import { buildFilterQuery } from "../services/filter.service.js";
 import { buildSortingQuery } from "../services/sorting.service.js";
+import { getUserBehavior } from "../services/personalization.service.js";
 
 export const action = async ({ request }) => {
   try {
     const body = await request.json();
-
-    const { shop, query, filters, sort } = body;
+    const { shop, query, filters = {}, sort, sessionId } = body;
 
     // 🔹 1. Get Store
     const store = await prisma.store.findUnique({
@@ -19,7 +19,7 @@ export const action = async ({ request }) => {
       return json({ error: "Store not found" }, { status: 404 });
     }
 
-    // 🔹 2. Get Filter & Sorting Config (DB-driven)
+    // 🔹 2. Get Configs
     const [filterConfig, sortingConfig] = await Promise.all([
       prisma.filter.findMany({
         where: {
@@ -35,97 +35,87 @@ export const action = async ({ request }) => {
       }),
     ]);
 
-    // 🔹 3. Build Queries
-    const filterQuery = buildFilterQuery(filterConfig,filters);
+    const filterQuery = buildFilterQuery(filterConfig, filters);
     const sortingQuery = buildSortingQuery(sortingConfig, sort);
-
 
     let products = [];
 
     // =========================================================
-    // 🔥 4. AI SEARCH FLOW (PRIMARY)
+    // 🔥 3. SEARCH FLOW (when query exists)
     // =========================================================
     if (query && query.trim().length > 0) {
       try {
+        // normalize price filter
+        if (filters.price) {
+          const price = filters.price.map((p) => parseFloat(p) + 0.0000001);
+          filters.price = { min: price[0], max: price[1] };
+        }
+
         const aiResults = await aiSearch(shop, {
           query_text: query,
           filters,
           limit: 10,
         });
 
-        // 👉 Convert AI result → full product data
-        products = await hydrateProducts(store.id, aiResults);
+        products = await hydrateProducts(store.id, aiResults, filterQuery, sortingQuery);
       } catch (err) {
         console.error("AI search failed → fallback to DB", err);
 
-        // 🔁 fallback to DB search
-        products = await prisma.product.findMany({
+        return await prisma.product.findMany({
           where: {
             storeId: store.id,
             ...filterQuery,
           },
           orderBy: sortingQuery,
-          take: 50,
+          take: 20,
         });
-
-        return products;
       }
 
-      // =========================================================
-      // 🔥 5. APPLY FILTERS (IN-MEMORY after AI ranking)
-      // =========================================================
-      // if (filters && Object.keys(filters).length > 0) {
-      //   products = products.filter((product) => {
-      //     return filtersConfig.every((filter) => {
-      //       const userValue = filters[filter.name];
-      //       if (!userValue) return true;
+      // 🔹 Sorting (in-memory)
+      // if (sortingQuery && products.length) {
+      //   const [field, order] = Object.entries(sortingQuery)[0];
 
-      //       switch (filter.field) {
-      //         case "tags":
-      //           return product.tags?.some((tag) =>
-      //             Array.isArray(userValue)
-      //               ? userValue.includes(tag)
-      //               : userValue === tag,
-      //           );
-
-      //         case "price":
-      //           return product.price < parseFloat(userValue);
-
-      //         default:
-      //           return true;
-      //       }
-      //     });
+      //   products.sort((a, b) => {
+      //     if (order === "asc") return a[field] - b[field];
+      //     return b[field] - a[field];
       //   });
       // }
 
-      // =========================================================
-      // 🔥 6. APPLY SORTING (IN-MEMORY)
-      // =========================================================
-      if (sortingQuery) {
-        const [field, order] = Object.entries(sortingQuery)[0];
-
-        products.sort((a, b) => {
-          if (order === "asc") return a[field] - b[field];
-          return b[field] - a[field];
-        });
-      }
-
-      return products.slice(0, 20);
+      return products;
     }
 
     // =========================================================
-    // 🔥 7. NON-AI FLOW (PURE DB SEARCH)
+    // 🔥 4. RECOMMENDATION FLOW (when NO query)
     // =========================================================
-    const dbProducts = await prisma.product.findMany({
-      where: {
-        storeId: store.id,
-        ...filterQuery,
-      },
-      orderBy: sortingQuery,
-      take: 20,
-    });
+    try {
+      const behavior = await getUserBehavior(store.id, sessionId);
 
-    return dbProducts;
+      const aiResults = await aiRecommend(shop, {
+        viewed_ids: behavior.viewed.slice(0, 20),
+        added_to_cart_ids: behavior.cart.slice(0, 10),
+        purchased_ids: behavior.purchased.slice(0, 10),
+        filters: {},
+        limit: 10,
+      });
+
+      products = await hydrateProducts(store.id, aiResults, filterQuery, sortingQuery);      
+
+      if (products.length) {        
+        return products;
+      }
+    } catch (err) {
+      console.error("AI recommend failed → fallback", err);
+    }
+
+    // =========================================================
+    // 🔥 5. FINAL FALLBACK (DB latest products)
+    // =========================================================
+    // return await prisma.product.findMany({
+    //   where: { storeId: store.id },
+    //   orderBy: { createdAt: "desc" },
+    //   take: 20,
+    // });
+
   } catch (error) {
     console.error("Search API Error:", error);
     return ({ error: "Internal Server Error" }, { status: 500 });
