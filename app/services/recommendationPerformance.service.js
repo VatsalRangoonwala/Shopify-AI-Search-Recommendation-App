@@ -58,7 +58,6 @@ export async function getRecommendationPerformance(storeId) {
     let performance = "average";
     if (ctr >= 15) performance = "high";
     else if (ctr < 5) performance = "low";
-    console.log(productTitleMap);
 
     return {
       name: productTitleMap[p.productId] || p.productId || "Unknown Product",

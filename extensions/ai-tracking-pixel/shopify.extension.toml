@@ -1,0 +1,16 @@
+name = "ai-tracking-pixel"
+type = "web_pixel_extension"
+uid = "28eb50da-03df-029f-c2c3-72119bac2db23fbc4f8a"
+
+runtime_context = "strict"
+
+[settings]
+type = "object"
+
+[settings.fields.accountID]
+name = "Account ID"
+description = "Account ID"
+type = "single_line_text_field"
+validations =  [
+  { name = "min", value = "1" }
+]
