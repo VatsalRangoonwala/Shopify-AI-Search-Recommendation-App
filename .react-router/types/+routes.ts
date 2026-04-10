@@ -35,9 +35,6 @@ type Pages = {
   "/api/onboarding/filters": {
     params: {};
   };
-  "/webhooks/orders/create": {
-    params: {};
-  };
   "/api/filter-analytics": {
     params: {};
   };
@@ -129,7 +126,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/api/recommendation-performance" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/onboarding/filters" | "/webhooks/orders/create" | "/api/filter-analytics" | "/api/recommendations" | "/api/search-insights" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/onboarding/data-quality" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/settings" | "/app/filters";
+    page: "/" | "/api/recommendation-performance" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/onboarding/filters" | "/api/filter-analytics" | "/api/recommendations" | "/api/search-insights" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/onboarding/data-quality" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/settings" | "/app/filters";
   };
   "routes/api.recommendation-performance.jsx": {
     id: "routes/api.recommendation-performance";
@@ -158,10 +155,6 @@ type RouteFiles = {
   "routes/api.onboarding.filters.jsx": {
     id: "routes/api.onboarding.filters";
     page: "/api/onboarding/filters";
-  };
-  "routes/webhooks.orders.create.jsx": {
-    id: "routes/webhooks.orders.create";
-    page: "/webhooks/orders/create";
   };
   "routes/api.filter-analytics.jsx": {
     id: "routes/api.filter-analytics";
@@ -294,7 +287,6 @@ type RouteModules = {
   "routes/webhooks.products.delete": typeof import("./app/routes/webhooks.products.delete.jsx");
   "routes/webhooks.products.update": typeof import("./app/routes/webhooks.products.update.jsx");
   "routes/api.onboarding.filters": typeof import("./app/routes/api.onboarding.filters.jsx");
-  "routes/webhooks.orders.create": typeof import("./app/routes/webhooks.orders.create.jsx");
   "routes/api.filter-analytics": typeof import("./app/routes/api.filter-analytics.jsx");
   "routes/api.recommendations": typeof import("./app/routes/api.recommendations.jsx");
   "routes/api.search-insights": typeof import("./app/routes/api.search-insights.jsx");

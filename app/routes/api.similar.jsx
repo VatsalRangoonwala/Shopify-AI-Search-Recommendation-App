@@ -13,7 +13,7 @@ export const action = async ({ request }) => {
   const aiResults = await aiSimilar(shop, productId, {
     filters: {},
     limit: limit,
-    diversity_penalty: 0.0,
+    diversity_penalty: store.diversity,
   });
   const ids = aiResults.results.map((r) => r.product_id.toString());
   const products = await prisma.product.findMany({

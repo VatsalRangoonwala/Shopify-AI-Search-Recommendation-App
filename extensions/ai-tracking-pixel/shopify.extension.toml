@@ -7,9 +7,17 @@ runtime_context = "strict"
 [settings]
 type = "object"
 
-[settings.fields.accountID]
-name = "Account ID"
-description = "Account ID"
+[settings.fields.shopDomain]
+name = "Shop Domain"
+description = "Store domain used when forwarding events to the app"
+type = "single_line_text_field"
+validations =  [
+  { name = "min", value = "1" }
+]
+
+[settings.fields.apiEndpoint]
+name = "API Endpoint"
+description = "App proxy endpoint that receives the tracked events"
 type = "single_line_text_field"
 validations =  [
   { name = "min", value = "1" }

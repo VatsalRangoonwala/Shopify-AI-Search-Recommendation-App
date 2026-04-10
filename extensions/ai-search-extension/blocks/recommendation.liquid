@@ -51,6 +51,64 @@
 </style>
 
 <script>
+function getOrCreateSessionId() {
+  let sessionId = localStorage.getItem('ai_session_id');
+
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem('ai_session_id', sessionId);
+  }
+
+  return sessionId;
+}
+
+async function fallbackTrackEvent(type, productId) {
+  try {
+    await fetch('/apps/api/events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type,
+        productId,
+        sessionId: getOrCreateSessionId(),
+        shop: Shopify.shop,
+      }),
+    });
+  } catch (err) {
+    console.error('Tracking failed', err);
+  }
+}
+
+async function publishPixelEvent(eventName, payload = {}) {
+  const enrichedPayload = {
+    ...payload,
+    sessionId: getOrCreateSessionId(),
+    shop: Shopify.shop,
+  };
+
+  if (window.Shopify?.analytics?.publish) {
+    try {
+      await window.Shopify.analytics.publish(eventName, enrichedPayload);
+      return;
+    } catch (err) {
+      console.error('Pixel publish failed', err);
+    }
+  }
+
+  const fallbackTypeMap = {
+    ai_recommendation_click: 'recommendation_click',
+    ai_recommendation_view: 'recommendation_view',
+  };
+
+  const fallbackType = fallbackTypeMap[eventName];
+
+  if (fallbackType && enrichedPayload.productId) {
+    await fallbackTrackEvent(fallbackType, enrichedPayload.productId);
+  }
+}
+
 async function loadRecommendations() {
   const sessionId = localStorage.getItem('ai_session_id');
   const shop = "{{ shop.domain }}";
@@ -75,6 +133,8 @@ async function loadRecommendations() {
     const card = document.createElement('div');
     card.className = 'ai-card';
 
+    publishPixelEvent('ai_recommendation_view', { productId: p.id });
+
     card.innerHTML = `
       <h4>${p.title}</h4>
       <p>₹ ${p.maxPrice}</p>
@@ -82,9 +142,7 @@ async function loadRecommendations() {
 
     // 🔥 Track click
     card.addEventListener('click', () => {
-      if (typeof trackEvent === "function") {
-        trackEvent('recommendation_click', p.id);
-      }
+      publishPixelEvent('ai_recommendation_click', { productId: p.id });
     });
 
     container.appendChild(card);

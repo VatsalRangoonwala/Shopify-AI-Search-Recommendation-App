@@ -34,7 +34,7 @@
 
     return sessionId;
   }
-  async function trackEvent(type, productId) {
+  async function fallbackTrackEvent(type, productId) {
     try {
       const sessionId = getOrCreateSessionId();
 
@@ -54,13 +54,42 @@
       console.error('Tracking failed', err);
     }
   }
+  async function publishPixelEvent(eventName, payload = {}) {
+    const enrichedPayload = {
+      ...payload,
+      sessionId: getOrCreateSessionId(),
+      shop: Shopify.shop,
+    };
+
+    if (window.Shopify?.analytics?.publish) {
+      try {
+        await window.Shopify.analytics.publish(eventName, enrichedPayload);
+        return;
+      } catch (err) {
+        console.error('Pixel publish failed', err);
+      }
+    }
+
+    const fallbackTypeMap = {
+      ai_add_to_cart: 'add_to_cart',
+      ai_product_view: 'view',
+      ai_search: 'search',
+    };
+
+    const fallbackValue = enrichedPayload.productId || enrichedPayload.query;
+    const fallbackType = fallbackTypeMap[eventName];
+
+    if (fallbackType && fallbackValue) {
+      await fallbackTrackEvent(fallbackType, fallbackValue);
+    }
+  }
   async function fetchProducts() {
     const shop = '{{ shop.domain }}';
     const query = document.getElementById('search-input')?.value || '';
 
     // 🔥 TRACK SEARCH EVENT
     if (query && query.trim().length > 0) {
-      trackEvent('search', query);
+      publishPixelEvent('ai_search', { query });
     }
 
     const filters = {};
@@ -98,15 +127,15 @@
     `;
 
       card.addEventListener('click', () => {
-        trackEvent('view', p.id);
+        publishPixelEvent('ai_product_view', { productId: p.id });
       });
 
       card.querySelector('button').addEventListener('click', () => {
-        trackEvent('add_to_cart', p.id);
+        publishPixelEvent('ai_add_to_cart', { productId: p.id });
       });
 
       card.querySelector('.rec-btn').addEventListener('click', () => {
-        trackEvent('recommendation_click', p.id);
+        publishPixelEvent('ai_product_view', { productId: p.id });
       });
 
       grid.appendChild(card);

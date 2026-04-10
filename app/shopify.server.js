@@ -6,9 +6,154 @@ import {
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server.js";
-import {seedSorting} from "./services/sorting.seed.js"
+import { seedSorting } from "./services/sorting.seed.js";
 
-const appUrl = process.env.APP_URL || "";
+const appUrl = process.env.SHOPIFY_APP_URL || process.env.APP_URL || "";
+
+async function runAdminGraphql(admin, query, variables = {}) {
+  const response = await admin.graphql(query, { variables });
+  const payload = await response.json();
+
+  if (payload.errors?.length) {
+    throw new Error(payload.errors.map(({ message }) => message).join(", "));
+  }
+
+  return payload.data;
+}
+
+function assertNoUserErrors(
+  userErrors = [],
+  context = "Shopify Admin GraphQL",
+) {
+  if (!userErrors.length) return;
+
+  const message = userErrors
+    .map(({ field, message: errorMessage }) =>
+      field?.length ? `${field.join(".")}: ${errorMessage}` : errorMessage,
+    )
+    .join(", ");
+
+  throw new Error(`${context} failed: ${message}`);
+}
+
+function isMissingWebPixelError(error) {
+  return error?.message?.includes("No web pixel was found for this app.");
+}
+
+async function enableTrackingPixel(admin, shop) {
+  const webPixel = {
+    settings: JSON.stringify({
+      shopDomain: shop,
+      apiEndpoint: `${appUrl}/api/events`,
+    }),
+  };
+
+  let data = { webPixel: null };
+
+  try {
+    data = await runAdminGraphql(
+      admin,
+      `#graphql
+        query {
+          webPixel {
+            id
+            settings
+          }
+        }
+      `,
+    );
+  } catch (error) {
+    if (!isMissingWebPixelError(error)) {
+      throw error;
+    }
+  }
+
+  if (data.webPixel?.id) {
+    const updateData = await runAdminGraphql(
+      admin,
+      `#graphql
+        mutation webPixelUpdate($id: ID!, $webPixel: WebPixelInput!) {
+          webPixelUpdate(id: $id, webPixel: $webPixel) {
+            webPixel {
+              id
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `,
+      { id: data.webPixel.id, webPixel },
+    );
+
+    assertNoUserErrors(updateData.webPixelUpdate.userErrors, "webPixelUpdate");
+
+    return updateData.webPixelUpdate.webPixel;
+  }
+
+  const createData = await runAdminGraphql(
+    admin,
+    `#graphql
+      mutation WebPixelCreate($webPixel: WebPixelInput!) {
+        webPixelCreate(webPixel: $webPixel) {
+          webPixel {
+            id
+            settings
+          }
+          userErrors {
+            field
+            message
+            code
+          }
+        }
+      }
+    `,
+    { webPixel },
+  );
+
+  assertNoUserErrors(createData.webPixelCreate.userErrors, "webPixelCreate");
+
+  return createData.webPixelCreate.webPixel;
+}
+
+async function registerWebhookSubscription(admin, topic, callbackPath) {
+  if (!appUrl) {
+    throw new Error(
+      "Missing SHOPIFY_APP_URL/APP_URL. Cannot register webhook subscriptions.",
+    );
+  }
+
+  const data = await runAdminGraphql(
+    admin,
+    `#graphql
+      mutation RegisterWebhook {
+        webhookSubscriptionCreate(
+          topic: ${topic}
+          webhookSubscription: {
+            callbackUrl: "${appUrl}${callbackPath}"
+            format: JSON
+          }
+        ) {
+          webhookSubscription {
+            id
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+  );
+
+  assertNoUserErrors(
+    data.webhookSubscriptionCreate.userErrors,
+    `webhookSubscriptionCreate(${topic})`,
+  );
+
+  return data.webhookSubscriptionCreate.webhookSubscription;
+}
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -40,76 +185,31 @@ const shopify = shopifyApp({
         },
       });
 
-      await seedSorting(shop)
+      await seedSorting(shop);
+      try {
+        await enableTrackingPixel(admin, shop);
+        console.log(`Pixel enabled successfully for ${shop}`);
+      } catch (error) {
+        console.error(`⚠️ Failed to enable pixel for ${shop}:`, error.message);
+        // App installation continues even if pixel fails
+      }
 
       // Register Webhooks
-      await admin.graphql(`
-      mutation {
-        webhookSubscriptionCreate(
-          topic: PRODUCTS_CREATE
-          webhookSubscription: {
-            callbackUrl: "${appUrl}/webhooks/products/create"
-            format: JSON
-          }
-        ) {
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `);
-
-      await admin.graphql(`
-      mutation {
-        webhookSubscriptionCreate(
-          topic: PRODUCTS_UPDATE
-          webhookSubscription: {
-            callbackUrl: "${appUrl}/webhooks/products/update"
-            format: JSON
-          }
-        ) {
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `);
-
-      await admin.graphql(`
-      mutation {
-        webhookSubscriptionCreate(
-          topic: PRODUCTS_DELETE
-          webhookSubscription: {
-            callbackUrl: "${appUrl}/webhooks/products/delete"
-            format: JSON
-          }
-        ) {
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `);
-
-      await admin.graphql(`
-      mutation {
-        webhookSubscriptionCreate(
-          topic: ORDERS_CREATE
-          webhookSubscription: {
-            callbackUrl: "${appUrl}/webhooks/orders/create"
-            format: JSON
-          }
-        ) {
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `);
+      await registerWebhookSubscription(
+        admin,
+        "PRODUCTS_CREATE",
+        "/webhooks/products/create",
+      );
+      await registerWebhookSubscription(
+        admin,
+        "PRODUCTS_UPDATE",
+        "/webhooks/products/update",
+      );
+      await registerWebhookSubscription(
+        admin,
+        "PRODUCTS_DELETE",
+        "/webhooks/products/delete",
+      );
     },
   },
 });

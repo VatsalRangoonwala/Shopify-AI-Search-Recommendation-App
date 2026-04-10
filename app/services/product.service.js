@@ -1,5 +1,9 @@
 export function extractShopifyId(gid) {
-  return gid?.split("/").pop() || null;
+  try {
+    return gid?.split("/").pop();
+  } catch (error) {
+    return gid;
+  }
 }
 
 export function parseTagFilter(tag) {

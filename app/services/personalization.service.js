@@ -13,7 +13,7 @@ export async function getUserBehavior(storeId, sessionId, customerId = null) {
       timestamp: "desc",
     },
     take: 200, // more context
-  });
+  });  
 
   const viewed = new Map();
   const cart = new Map();

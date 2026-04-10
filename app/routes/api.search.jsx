@@ -57,7 +57,12 @@ export const action = async ({ request }) => {
           limit: 10,
         });
 
-        products = await hydrateProducts(store.id, aiResults, filterQuery, sortingQuery);
+        products = await hydrateProducts(
+          store.id,
+          aiResults,
+          filterQuery,
+          sortingQuery,
+        );
       } catch (err) {
         console.error("AI search failed → fallback to DB", err);
 
@@ -91,16 +96,21 @@ export const action = async ({ request }) => {
       const behavior = await getUserBehavior(store.id, sessionId);
 
       const aiResults = await aiRecommend(shop, {
-        viewed_ids: behavior.viewed.slice(0, 20),
+        viewed_ids: behavior.viewed.slice(0, 10),
         added_to_cart_ids: behavior.cart.slice(0, 10),
         purchased_ids: behavior.purchased.slice(0, 10),
         filters: {},
         limit: 10,
       });
 
-      products = await hydrateProducts(store.id, aiResults, filterQuery, sortingQuery);      
+      products = await hydrateProducts(
+        store.id,
+        aiResults,
+        filterQuery,
+        sortingQuery,
+      );
 
-      if (products.length) {        
+      if (products.length) {
         return products;
       }
     } catch (err) {
@@ -115,7 +125,6 @@ export const action = async ({ request }) => {
     //   orderBy: { createdAt: "desc" },
     //   take: 20,
     // });
-
   } catch (error) {
     console.error("Search API Error:", error);
     return ({ error: "Internal Server Error" }, { status: 500 });

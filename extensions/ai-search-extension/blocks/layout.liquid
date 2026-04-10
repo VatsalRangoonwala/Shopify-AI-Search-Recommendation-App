@@ -37,10 +37,12 @@
       <div id="ai-products-grid" class="ecom-product-grid"></div>
     </section>
 
-    {% comment %} <section class="ecom-section ecom-recommendations">
-      <h2 class="ecom-section-title">{{ block.settings.recommendations_title }}</h2>
-      <div id="ai-recommendations-grid" class="ecom-product-grid"></div>
-    </section> {% endcomment %}
+    {% comment %}
+      <section class="ecom-section ecom-recommendations">
+        <h2 class="ecom-section-title">{{ block.settings.recommendations_title }}</h2>
+        <div id="ai-recommendations-grid" class="ecom-product-grid"></div>
+      </section>
+    {% endcomment %}
   </main>
 </div>
 
@@ -441,7 +443,7 @@
     return sessionId;
   }
 
-  async function trackEvent(type, productId) {
+  async function fallbackTrackEvent(type, productId) {
     try {
       const sessionId = getOrCreateSessionId();
       await fetch('/apps/api/events', {
@@ -451,6 +453,35 @@
       });
     } catch (err) {
       console.error('Tracking failed', err);
+    }
+  }
+
+  async function publishPixelEvent(eventName, payload = {}) {
+    const enrichedPayload = {
+      ...payload,
+      sessionId: getOrCreateSessionId(),
+      shop: Shopify.shop,
+    };
+
+    if (window.Shopify?.analytics?.publish) {
+      try {
+        await window.Shopify.analytics.publish(eventName, enrichedPayload);
+        return;
+      } catch (err) {
+        console.error('Pixel publish failed', err);
+      }
+    }
+
+    const fallbackTypeMap = {
+      ai_recommendation_click: 'recommendation_click',
+      ai_search: 'search',
+    };
+
+    const fallbackValue = enrichedPayload.productId || enrichedPayload.query;
+    const fallbackType = fallbackTypeMap[eventName];
+
+    if (fallbackType && fallbackValue) {
+      await fallbackTrackEvent(fallbackType, fallbackValue);
     }
   }
 
@@ -654,7 +685,9 @@
     const query = document.getElementById('search-input')?.value || '';
     const sessionId = getOrCreateSessionId();
 
-    if (query && query.trim().length > 0) trackEvent('search', query);
+    if (query && query.trim().length > 0) {
+      publishPixelEvent('ai_search', { query });
+    }
 
     const filters = {};
 
@@ -691,12 +724,11 @@
         const card = document.createElement('div');
         card.className = 'ecom-card';
         card.innerHTML = createProductCardHTML(p);
-
         card.addEventListener('click', async () => {
           if (p.isRecommended) {
-            await trackEvent('recommendation_click', p.shopifyProductId);
+            publishPixelEvent('ai_recommendation_click', { productId: p.shopifyProductId });
           }
-          await trackEvent('view', p.shopifyProductId);
+          publishPixelEvent('view', { productId: p.shopifyProductId });
 
           if (p.handle) {
             window.location.href = `/products/${p.handle}`;
@@ -714,11 +746,11 @@
           button.disabled = true;
 
           try {
-            // 2. Fire your tracking event
+            // 2. Fire recommendation attribution before the add-to-cart flow.
             if (p.isRecommended) {
-              await trackEvent('recommendation_click', p.shopifyProductId);
+              publishPixelEvent('ai_recommendation_click', { productId: p.shopifyProductId });
             }
-            await trackEvent('add_to_cart', p.shopifyProductId);
+            publishPixelEvent('add_to_cart', { productId: p.shopifyProductId });
 
             // 3. Call Shopify's AJAX Cart API
             const response = await fetch('/cart/add.js', {
@@ -764,9 +796,9 @@
         card.querySelector('.rec-btn').addEventListener('click', async (e) => {
           e.stopPropagation();
           if (p.isRecommended) {
-            await trackEvent('recommendation_click', p.shopifyProductId);
+            publishPixelEvent('ai_recommendation_click', { productId: p.shopifyProductId });
           }
-          await trackEvent('view', p.shopifyProductId);
+          publishPixelEvent('view', { productId: p.shopifyProductId });
           if (p.handle) {
             window.location.href = `/products/${p.handle}`;
           } else {
@@ -799,11 +831,11 @@
         card.className = 'ecom-card';
         card.innerHTML = createProductCardHTML(p);
 
-        card.addEventListener('click', () => trackEvent('recommendation_click', p.shopifyProductId));
-        card.querySelector('.add-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          trackEvent('add_to_cart', p.shopifyProductId);
-        });
+        publishPixelEvent('ai_recommendation_view', { productId: p.shopifyProductId });
+
+        card.addEventListener('click', () =>
+          publishPixelEvent('ai_recommendation_click', { productId: p.shopifyProductId })
+        );
 
         container.appendChild(card);
       });
