@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Text,
@@ -15,6 +15,26 @@ export default function FilterSettings() {
   const [filters, setFilters] = useState([]);
   const [syncLoading, setSyncLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+
+  useEffect(() => {
+    loadFilters();
+  }, []);
+
+  const loadFilters = async () => {
+    try {
+      const response = await fetch("/api/admin/filters");
+      const data = await response.json();
+      const formatted = data.filters.map((f) => ({
+        id: f.id,
+        label: f.label,
+        description: `${f.source} - ${f.sourceField || ""}`,
+        checked: f.isVisible === true,
+      }));
+      setFilters(formatted);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   // 🔹 Sync filters
   const handleSyncFilters = async () => {
@@ -112,7 +132,7 @@ export default function FilterSettings() {
               <Text tone="subdued">No filters synced yet.</Text>
             )}
 
-            {filters.map((filter) => (
+            {filters?.map((filter) => (
               <Box key={filter.id} padding="200">
                 <InlineStack align="space-between" blockAlign="center">
                   <Checkbox

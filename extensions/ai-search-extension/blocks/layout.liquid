@@ -36,13 +36,6 @@
       <h2 class="ecom-section-title">{{ block.settings.products_title }}</h2>
       <div id="ai-products-grid" class="ecom-product-grid"></div>
     </section>
-
-    {% comment %}
-      <section class="ecom-section ecom-recommendations">
-        <h2 class="ecom-section-title">{{ block.settings.recommendations_title }}</h2>
-        <div id="ai-recommendations-grid" class="ecom-product-grid"></div>
-      </section>
-    {% endcomment %}
   </main>
 </div>
 
@@ -813,43 +806,11 @@
     }
   }
 
-  async function loadRecommendations(shop) {
-    const sessionId = getOrCreateSessionId();
-    try {
-      const res = await fetch('/apps/api/recommendations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop, sessionId }),
-      });
-      const products = await res.json();
-
-      const container = document.getElementById('ai-recommendations-grid');
-      container.innerHTML = '';
-
-      products.forEach((p) => {
-        const card = document.createElement('div');
-        card.className = 'ecom-card';
-        card.innerHTML = createProductCardHTML(p);
-
-        publishPixelEvent('ai_recommendation_view', { productId: p.shopifyProductId });
-
-        card.addEventListener('click', () =>
-          publishPixelEvent('ai_recommendation_click', { productId: p.shopifyProductId })
-        );
-
-        container.appendChild(card);
-      });
-    } catch (err) {
-      console.error('Recommendations fetch failed:', err);
-    }
-  }
-
   // --- Initialization & Event Listeners ---
   document.addEventListener('DOMContentLoaded', async () => {
     const shop = '{{ shop.domain }}';
     await loadFiltersAndSorting(shop);
     fetchProducts();
-    // loadRecommendations(shop);
   });
 
   // Re-fetch products when checkboxes/swatches, sorting, or search changes

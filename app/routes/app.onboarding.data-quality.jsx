@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate, useFetcher } from "react-router";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import {
   BlockStack,
   Card,
@@ -8,6 +8,7 @@ import {
   InlineStack,
   Divider,
   Badge,
+  TextField,
 } from "@shopify/polaris";
 import OnboardingLayout from "../components/onboarding/OnboardingLayout.jsx";
 import Checklist from "../components/data-quality/Checklist.jsx";
@@ -17,33 +18,10 @@ import StatusSummary from "../components/data-quality/StatusSummary.jsx";
 import DataIssues from "../components/data-quality/Dataissues.jsx";
 import WeightModel from "../components/data-quality/Weightmodel.jsx";
 import { requireOnboarding } from "../utils/onboarding-guard.js";
-import prisma from "app/db.server.js";
 
 export const loader = async ({ request }) => {
   await requireOnboarding(request);
   return null;
-};
-
-export const action = async ({ request }) => {
-  const { store, session } = await requireOnboarding(request);
-  const body = await request.json();
-
-  const { diversity } = body;
-
-  if (!store && !session) {
-    return { error: "Session is required" };
-  }
-
-  await prisma.store.update({
-    where: {
-      id: store.id,
-    },
-    data: {
-      diversity: diversity ?? 0.0,
-    },
-  });
-
-  return { success: true };
 };
 
 const DataQualityPage = () => {
@@ -51,18 +29,17 @@ const DataQualityPage = () => {
   const [checked, setChecked] = useState({});
   const [diversity, setDiversity] = useState(0.0);
 
-  const fetcher = useFetcher();
   const handleToggle = (id) =>
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      const payload = {
-        diversity,
-      };
-      fetcher.submit(JSON.stringify(payload), {
-        method: "post",
-        encType: "application/json",
+      await fetch("/api/diversity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ diversity }),
       });
       navigate("/app/onboarding/sync");
     } catch (error) {
@@ -167,11 +144,11 @@ const DataQualityPage = () => {
               label="Diversity Weight (0 to 1)"
               type="number"
               value={diversity}
-              onChange={(e) => setDiversity(e.target.value)}
+              onChange={(value) => setDiversity(parseFloat(value))}
               autoComplete="off"
               min={0}
               max={1}
-              step={0.01}
+              step={0.1}
               helpText="0 = Consistent, 1 = Highly diverse"
             />
           </BlockStack>

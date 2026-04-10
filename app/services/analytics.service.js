@@ -70,7 +70,7 @@ export async function getAnalytics(storeId) {
     revenueInfluenced: 0, // update when revenue tracking exists
     formatted: {
       totalSearches: totalSearches.toLocaleString(),
-      recommendationsShown: recommendationsShown.toLocaleString(),
+      // recommendationsShown: recommendationsShown.toLocaleString(),
       recommendationClicks: recommendationClicks.toLocaleString(),
       purchases: purchases.toLocaleString(),
       // ctr: `${ctr}%`,

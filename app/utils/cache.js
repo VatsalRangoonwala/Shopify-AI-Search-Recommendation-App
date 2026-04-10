@@ -6,5 +6,6 @@ export async function getCache(key) {
 }
 
 export async function setCache(key, value, ttl = 300) {
+  if (value === undefined) return;
   await redis.set(key, JSON.stringify(value), "EX", ttl);
 }

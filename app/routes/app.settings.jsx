@@ -1,4 +1,11 @@
-import { Page, BlockStack } from "@shopify/polaris";
+import {
+  Page,
+  BlockStack,
+  Card,
+  Text,
+  TextField,
+  Button,
+} from "@shopify/polaris";
 import { useFetcher, useLoaderData } from "react-router";
 import FilterSettings from "../components/settings/FilterSettings.jsx";
 import ProductSetting from "../components/settings/ProductSetting.jsx";
@@ -7,6 +14,7 @@ import DangerZone from "../components/settings/DangerZone.jsx";
 import prisma from "../db.server.js";
 import { authenticate } from "../shopify.server.js";
 import { seedSorting } from "../services/sorting.seed.js";
+import { useState } from "react";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -26,7 +34,7 @@ export const loader = async ({ request }) => {
     orderBy: { position: "asc" },
   });
 
-  return { sorting };
+  return { store, sorting };
 };
 
 export const action = async ({ request }) => {
@@ -76,8 +84,10 @@ export const action = async ({ request }) => {
 };
 
 export default function Settings() {
-  const [diversity, setDiversity] = useState(0.0);
-  const { sorting } = useLoaderData();
+  const { sorting, store } = useLoaderData();
+  const [diversity, setDiversity] = useState(store.diversity);
+  const [saveLoading, setSaveLoading] = useState(false);
+
   const fetcher = useFetcher();
 
   const handleSaveSorting = (state) => {
@@ -89,7 +99,8 @@ export default function Settings() {
 
   const handleSave = async () => {
     try {
-      await fetch("/app/onboarding/data-quality", {
+      setSaveLoading(true);
+      await fetch("/api/diversity", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -98,6 +109,8 @@ export default function Settings() {
       });
     } catch (error) {
       console.log(`Error is: ${error}`);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -129,14 +142,18 @@ export default function Settings() {
               label="Diversity Weight (0 to 1)"
               type="number"
               value={diversity}
-              onChange={(e) => setDiversity(e.target.value)}
+              onChange={(value) => setDiversity(parseFloat(value))}
               autoComplete="off"
               min={0}
               max={1}
-              step={0.01}
+              step={0.1}
               helpText="0 = Consistent, 1 = Highly diverse"
             />
-            <Button variant="primary" onClick={() => handleSave()}>
+            <Button
+              variant="primary"
+              loading={saveLoading}
+              onClick={() => handleSave()}
+            >
               Save Diversity
             </Button>
           </BlockStack>
