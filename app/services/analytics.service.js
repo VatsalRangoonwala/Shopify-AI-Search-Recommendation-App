@@ -1,57 +1,60 @@
 import prisma from "../db.server.js";
 
 export async function getAnalytics(storeId) {
-  const events = await prisma.event.findMany({
-    where: { storeId },
-    select: {
-      type: true,
-      productId: true,
-    },
-  });
+  const evenTypes = [
+    "search",
+    "recommendation_click",
+    "purchase",
+  ];
 
-  const productMap = {};
+  const [totalSearches, recommendationClicks, purchases] =
+    await Promise.all(
+      evenTypes.map((type) => prisma.event.count({ where: { storeId, type } })),
+    );
 
-  let totalSearches = 0;
-  let recommendationsShown = 0;
-  let recommendationClicks = 0;
-  let purchases = 0;
+  // const productMap = {};
 
-  events.forEach((e) => {
-    if (!productMap[e.productId]) {
-      productMap[e.productId] = {
-        productId: e.productId,
-        searches: 0,
-        clicks: 0,
-        views: 0,
-      };
-    }
+  // let totalSearches = 0;
+  // let recommendationsShown = 0;
+  // let recommendationClicks = 0;
+  // let purchases = 0;
 
-    switch (e.type) {
-      case "search":
-        productMap[e.productId].searches++;
-        totalSearches++;
-        break;
+  // events.forEach((e) => {
+  //   if (!productMap[e.productId]) {
+  //     productMap[e.productId] = {
+  //       productId: e.productId,
+  //       searches: 0,
+  //       clicks: 0,
+  //       views: 0,
+  //     };
+  //   }
 
-      case "recommendation_view":
-        productMap[e.productId].views++;
-        recommendationsShown++;
-        break;
+  //   switch (e.type) {
+  //     case "search":
+  //       productMap[e.productId].searches++;
+  //       totalSearches++;
+  //       break;
 
-      case "recommendation_click":
-        productMap[e.productId].clicks++;
-        recommendationClicks++;
-        break;
+  //     case "recommendation_view":
+  //       productMap[e.productId].views++;
+  //       recommendationsShown++;
+  //       break;
 
-      case "purchase":
-        purchases++;
-        break;
-    }
-  });
+  //     case "recommendation_click":
+  //       productMap[e.productId].clicks++;
+  //       recommendationClicks++;
+  //       break;
+
+  //     case "purchase":
+  //       purchases++;
+  //       break;
+  //   }
+  // });
 
   // CTR = Clicks / Views
-  const ctr = recommendationsShown
-    ? ((recommendationClicks / recommendationsShown) * 100).toFixed(1)
-    : "0.0";
+  // const ctr = recommendationsShown
+  //   ? ((recommendationClicks / recommendationsShown) * 100).toFixed(1)
+  //   : "0.0";
 
   // Conversion Rate = Purchases / Clicks
   const conversionRate = recommendationClicks
@@ -60,10 +63,9 @@ export async function getAnalytics(storeId) {
 
   return {
     totalSearches,
-    recommendationsShown,
     recommendationClicks,
     purchases,
-    ctr: `${ctr}%`,
+    // ctr: `${ctr}%`,
     conversionRate: `${conversionRate}%`,
     revenueInfluenced: 0, // update when revenue tracking exists
     formatted: {
@@ -71,11 +73,9 @@ export async function getAnalytics(storeId) {
       recommendationsShown: recommendationsShown.toLocaleString(),
       recommendationClicks: recommendationClicks.toLocaleString(),
       purchases: purchases.toLocaleString(),
-      ctr: `${ctr}%`,
+      // ctr: `${ctr}%`,
       conversionRate: `${conversionRate}%`,
       revenueInfluenced: "$0",
     },
-
-    products: Object.values(productMap),
   };
 }

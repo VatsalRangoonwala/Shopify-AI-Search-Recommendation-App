@@ -1,6 +1,7 @@
 import { Page, BlockStack } from "@shopify/polaris";
 import { useFetcher, useLoaderData } from "react-router";
 import FilterSettings from "../components/settings/FilterSettings.jsx";
+import ProductSetting from "../components/settings/ProductSetting.jsx";
 import SortingSettings from "../components/settings/SortingSettings.jsx";
 import DangerZone from "../components/settings/DangerZone.jsx";
 import prisma from "../db.server.js";
@@ -75,6 +76,7 @@ export const action = async ({ request }) => {
 };
 
 export default function Settings() {
+  const [diversity, setDiversity] = useState(0.0);
   const { sorting } = useLoaderData();
   const fetcher = useFetcher();
 
@@ -85,9 +87,24 @@ export default function Settings() {
     });
   };
 
+  const handleSave = async () => {
+    try {
+      await fetch("/app/onboarding/data-quality", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ diversity }),
+      });
+    } catch (error) {
+      console.log(`Error is: ${error}`);
+    }
+  };
+
   return (
     <Page title="Settings" fullWidth>
       <BlockStack gap="400">
+        <ProductSetting />
         <FilterSettings />
 
         <SortingSettings
@@ -95,6 +112,35 @@ export default function Settings() {
           onSave={handleSaveSorting}
           loading={fetcher.state === "submitting"}
         />
+
+        {/* Diversity control */}
+        <Card>
+          <BlockStack gap="400">
+            <Text variant="headingSm" as="h3">
+              Diversity Control
+            </Text>
+
+            <Text as="p" tone="subdued">
+              Control how varied the AI output is. Lower values make results
+              more consistent, higher values increase variation.
+            </Text>
+
+            <TextField
+              label="Diversity Weight (0 to 1)"
+              type="number"
+              value={diversity}
+              onChange={(e) => setDiversity(e.target.value)}
+              autoComplete="off"
+              min={0}
+              max={1}
+              step={0.01}
+              helpText="0 = Consistent, 1 = Highly diverse"
+            />
+            <Button variant="primary" onClick={() => handleSave()}>
+              Save Diversity
+            </Button>
+          </BlockStack>
+        </Card>
 
         <DangerZone />
       </BlockStack>

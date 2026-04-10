@@ -26,7 +26,7 @@ const kpis = [
     },
     {
       title: "AI Recommendations Shown",
-      value: data?.recommendationsShown || "0",
+      value: data?.recommendationClicks || "0",
       icon: ThumbsUpIcon,
     },
     {
@@ -36,7 +36,7 @@ const kpis = [
     },
     {
       title: "Conversion Boost",
-      value: data?.conversionBoost || "0%",
+      value: data?.conversionRate || "0%",
       icon: ChartVerticalFilledIcon,
     },
     {

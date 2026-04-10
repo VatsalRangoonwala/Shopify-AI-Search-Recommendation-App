@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useFetcher } from "react-router";
 import {
   BlockStack,
   Card,
@@ -17,18 +17,58 @@ import StatusSummary from "../components/data-quality/StatusSummary.jsx";
 import DataIssues from "../components/data-quality/Dataissues.jsx";
 import WeightModel from "../components/data-quality/Weightmodel.jsx";
 import { requireOnboarding } from "../utils/onboarding-guard.js";
+import prisma from "app/db.server.js";
 
 export const loader = async ({ request }) => {
   await requireOnboarding(request);
   return null;
 };
 
+export const action = async ({ request }) => {
+  const { store, session } = await requireOnboarding(request);
+  const body = await request.json();
+
+  const { diversity } = body;
+
+  if (!store && !session) {
+    return { error: "Session is required" };
+  }
+
+  await prisma.store.update({
+    where: {
+      id: store.id,
+    },
+    data: {
+      diversity: diversity ?? 0.0,
+    },
+  });
+
+  return { success: true };
+};
+
 const DataQualityPage = () => {
   const navigate = useNavigate();
   const [checked, setChecked] = useState({});
+  const [diversity, setDiversity] = useState(0.0);
 
+  const fetcher = useFetcher();
   const handleToggle = (id) =>
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const handleSave = () => {
+    try {
+      const payload = {
+        diversity,
+      };
+      fetcher.submit(JSON.stringify(payload), {
+        method: "post",
+        encType: "application/json",
+      });
+      navigate("/app/onboarding/sync");
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <OnboardingLayout currentStep={2}>
@@ -69,14 +109,24 @@ const DataQualityPage = () => {
                 </Text>
               </InlineStack>
               <Text variant="bodySm" as="p">
-                <Text as="span" fontWeight="semibold">Title:</Text>{" "}
-                "Men's Lightweight Waterproof Trail Runner" beats "Trail Shoe v2" — be descriptive.
-                {" "}<Text as="span" fontWeight="semibold">Description:</Text>{" "}
-                2–3 sentences covering materials, use cases, and selling points.
-                {" "}<Text as="span" fontWeight="semibold">Category & Brand:</Text>{" "}
-                Helps the AI distinguish context (e.g. "Apple" fruit vs. tech).
-                {" "}<Text as="span" fontWeight="semibold">Tags:</Text>{" "}
-                Add attributes not in the title: "minimalist," "vintage," "eco-friendly."
+                <Text as="span" fontWeight="semibold">
+                  Title:
+                </Text>{" "}
+                "Men's Lightweight Waterproof Trail Runner" beats "Trail Shoe
+                v2" — be descriptive.{" "}
+                <Text as="span" fontWeight="semibold">
+                  Description:
+                </Text>{" "}
+                2–3 sentences covering materials, use cases, and selling points.{" "}
+                <Text as="span" fontWeight="semibold">
+                  Category & Brand:
+                </Text>{" "}
+                Helps the AI distinguish context (e.g. "Apple" fruit vs. tech).{" "}
+                <Text as="span" fontWeight="semibold">
+                  Tags:
+                </Text>{" "}
+                Add attributes not in the title: "minimalist," "vintage,"
+                "eco-friendly."
               </Text>
             </BlockStack>
             <BlockStack gap="200">
@@ -87,11 +137,43 @@ const DataQualityPage = () => {
                 </Text>
               </InlineStack>
               <Text variant="bodySm" as="p">
-                Every product must have a <Text as="span" fontWeight="semibold">Title</Text> and a{" "}
-                <Text as="span" fontWeight="semibold">unique Product ID</Text>. Without these,
-                the product cannot be indexed or tracked.
+                Every product must have a{" "}
+                <Text as="span" fontWeight="semibold">
+                  Title
+                </Text>{" "}
+                and a{" "}
+                <Text as="span" fontWeight="semibold">
+                  unique Product ID
+                </Text>
+                . Without these, the product cannot be indexed or tracked.
               </Text>
             </BlockStack>
+          </BlockStack>
+        </Card>
+
+        {/* Diversity control */}
+        <Card>
+          <BlockStack gap="400">
+            <Text variant="headingSm" as="h3">
+              Diversity Control
+            </Text>
+
+            <Text as="p" tone="subdued">
+              Control how varied the AI output is. Lower values make results
+              more consistent, higher values increase variation.
+            </Text>
+
+            <TextField
+              label="Diversity Weight (0 to 1)"
+              type="number"
+              value={diversity}
+              onChange={(e) => setDiversity(e.target.value)}
+              autoComplete="off"
+              min={0}
+              max={1}
+              step={0.01}
+              helpText="0 = Consistent, 1 = Highly diverse"
+            />
           </BlockStack>
         </Card>
 
@@ -125,7 +207,7 @@ const DataQualityPage = () => {
           <Button url="#" variant="tertiary">
             View Full Guide
           </Button>
-          <Button variant="primary" onClick={() => navigate("/app/onboarding/sync")}>
+          <Button variant="primary" onClick={() => handleSave()}>
             Continue Setup
           </Button>
         </InlineStack>
