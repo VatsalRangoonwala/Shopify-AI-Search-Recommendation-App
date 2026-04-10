@@ -27,9 +27,6 @@ export const action = async ({ request }) => {
     const existingFilter = await prisma.filter.findMany({
       where: {
         storeId: store.id,
-        id: {
-          in: filterIds,
-        },
       },
       select: {
         id: true,
@@ -40,10 +37,25 @@ export const action = async ({ request }) => {
       return jsonError("Filters not found", 404);
     }
 
-    const updatedFilter = await prisma.filter.updateMany({
+    const unselected = existingFilter
+      .filter((filter) => !filterIds.includes(filter.id))
+      .map((f) => f.id);
+
+    await prisma.filter.updateMany({
       where: { id: { in: filterIds } },
       data: {
         status: "selected",
+        isVisible:true
+      },
+    });
+
+    await prisma.filter.updateMany({
+      where: {
+        id: { in: unselected },
+      },
+      data: {
+        status: "detected",
+        isVisible:false
       },
     });
 
