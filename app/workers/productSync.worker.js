@@ -101,15 +101,30 @@ const worker = new Worker(
       }
 
       case "webhook-product-create": {
-        const { product } = job.data;
+        const normalized = normalizeWebhookProduct(job.data.product);
 
-        const newProduct = normalizeWebhookProduct(product);
-
-        const Product = await prisma.product.create({
-          data: { storeId: store.id, ...newProduct },
+        const existing = await prisma.product.findUnique({
+          where: {
+            storeId_shopifyProductId: {
+              storeId: store.id,
+              shopifyProductId: normalized.shopifyProductId,
+            },
+          },
         });
 
-        await addProductToFilters(Product);
+        const saved = await prisma.product.upsert({
+          where: {
+            storeId_shopifyProductId: {
+              storeId: store.id,
+              shopifyProductId: normalized.shopifyProductId,
+            },
+          },
+          update: normalized,
+          create: { ...normalized, storeId: store.id },
+        });
+
+        if (existing) await updateFiltersForProductChange(existing, saved);
+        else await addProductToFilters(saved);
 
         break;
       }
@@ -152,22 +167,23 @@ const worker = new Worker(
       }
 
       case "webhook-product-delete": {
-        const { productId } = job.data;
-
-        const product = await prisma.product.findUnique({
+        const existing = await prisma.product.findUnique({
           where: {
             storeId_shopifyProductId: {
               storeId: store.id,
-              shopifyProductId: productId.toString(),
+              shopifyProductId: String(job.data.productId),
             },
           },
         });
-        await removeProductFromFilters(product);
+
+        if (!existing) break;
+
+        await removeProductFromFilters(existing);
         await prisma.product.delete({
           where: {
             storeId_shopifyProductId: {
               storeId: store.id,
-              shopifyProductId: productId.toString(),
+              shopifyProductId: String(job.data.productId),
             },
           },
         });

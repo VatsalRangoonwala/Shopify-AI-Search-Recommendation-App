@@ -3,30 +3,47 @@ import prisma from "../db.server.js";
 export async function hydrateProducts(
   storeId,
   aiResults,
-  filterQuery,
-  sortingQuery,
+  filterQuery = {},
+  sortingQuery = { createdAt: "desc" },
+  limit = 20,
 ) {
-  const ids = aiResults.results.map((r) => r.product_id.toString());
+  const ids = (aiResults?.results ?? []).map((r) => String(r.product_id));
 
-  const products = await prisma.product.findMany({
+  if (!ids.length) {
+    return prisma.product.findMany({
+      where: { storeId, ...filterQuery },
+      orderBy: sortingQuery,
+      take: limit,
+    });
+  }
+
+  const recommended = await prisma.product.findMany({
     where: {
+      storeId,
       shopifyProductId: { in: ids },
-      storeId,
       ...filterQuery,
     },
-    orderBy: sortingQuery,
   });
 
-  const normalProducts = await prisma.product.findMany({
+  const productMap = new Map(
+    recommended.map((p) => [p.shopifyProductId, { ...p, isRecommended: true }]),
+  );
+
+  const orderedRecommended = ids.map((id) => productMap.get(id)).filter(Boolean);
+
+  if (orderedRecommended.length >= limit) {
+    return orderedRecommended.slice(0, limit);
+  }
+
+  const fallback = await prisma.product.findMany({
     where: {
-      shopifyProductId: { notIn: ids },
       storeId,
+      shopifyProductId: { notIn: ids },
       ...filterQuery,
     },
     orderBy: sortingQuery,
+    take: limit - orderedRecommended.length,
   });
 
-  const recproduct = products.map((p) => ({ ...p, isRecommended: true }));
-
-  return [...recproduct, ...normalProducts];
+  return [...orderedRecommended, ...fallback];
 }

@@ -156,33 +156,53 @@ export function isUsefulFilterKey(key) {
 // }
 
 export async function updateFiltersForProductChange(oldProduct, newProduct) {
-  const oldValues = extractFilterableValues(oldProduct);
-  const newValues = extractFilterableValues(newProduct);
+  const oldValues = extractFilterableValues(oldProduct, oldProduct.id);
+  const newValues = extractFilterableValues(newProduct, newProduct.id);
 
-  const allKeys = new Set([
-    ...Object.keys(oldValues),
-    ...Object.keys(newValues),
-  ]);
+  const allKeys = new Set([...oldValues.keys(), ...newValues.keys()]);
 
   for (const key of allKeys) {
-    const oldSet = new Set(oldValues[key] || []);
-    const newSet = new Set(newValues[key] || []);
+    const oldSet = oldValues.get(key)?.values ?? new Set();
+    const newSet = newValues.get(key)?.values ?? new Set();
 
-    // removed values
+    let firstRemoved = true;
     for (const value of oldSet) {
       if (!newSet.has(value)) {
-        await decrementFilterValue(newProduct.storeId, key, value);
+        await decrementFilterValue(
+          newProduct.storeId,
+          key,
+          value,
+          firstRemoved,
+          oldProduct,
+        );
+        firstRemoved = false;
       }
     }
 
-    // added values
+    let firstAdded = true;
     for (const value of newSet) {
       if (!oldSet.has(value)) {
-        await incrementFilterValue(newProduct.storeId, key, value);
+        await incrementFilterValue(
+          newProduct.storeId,
+          key,
+          value,
+          firstAdded,
+        );
+        firstAdded = false;
       }
     }
   }
-  return;
+
+  const oldHasPrice = oldProduct.minPrice != null;
+  const newHasPrice = newProduct.minPrice != null;
+
+  if (oldHasPrice && !newHasPrice) {
+    await decrementFilterValue(newProduct.storeId, "price", null, true, oldProduct);
+  }
+
+  if (!oldHasPrice && newHasPrice) {
+    await incrementFilterValue(newProduct.storeId, "price", null, true);
+  }
 }
 
 export async function decrementFilterValue(
