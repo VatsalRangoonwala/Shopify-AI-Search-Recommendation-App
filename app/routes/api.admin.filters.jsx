@@ -56,3 +56,17 @@ export const action = async ({ request }) => {
     );
   }
 };
+export const loader = async ({ request }) => {
+  const { session } = await authenticate.admin(request);
+
+  const store = await prisma.store.findUnique({
+    where: { shop: session.shop },
+  });
+
+  const filters = await prisma.filter.findMany({
+    where: { storeId: store.id },
+    orderBy: [{ label: "asc" }],
+  });
+
+  return { filters };
+};
