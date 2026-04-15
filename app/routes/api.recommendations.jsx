@@ -22,11 +22,11 @@ export const action = async ({ request }) => {
   try {
     // 🔥 Step 2: AI recommendation
     aiResults = await aiRecommend(shop, {
-      viewed_ids: behavior.viewed.slice(0, 20),
+      viewed_ids: behavior.viewed.slice(0, 10),
       added_to_cart_ids: behavior.cart.slice(0, 10),
       purchased_ids: behavior.purchased.slice(0, 10),
       filters: {},
-      limit: 10,
+      limit: 12,
     });
   } catch (err) {
     console.log("AI failed → fallback");
@@ -50,6 +50,6 @@ async function fallbackProducts(storeId) {
   return prisma.product.findMany({
     where: { storeId },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: 12,
   });
 }

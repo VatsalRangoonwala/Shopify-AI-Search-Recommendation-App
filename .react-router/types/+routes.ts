@@ -56,6 +56,9 @@ type Pages = {
   "/api/diversity": {
     params: {};
   };
+  "/api/products": {
+    params: {};
+  };
   "/api/filters": {
     params: {};
   };
@@ -129,7 +132,7 @@ type Pages = {
 type RouteFiles = {
   "root.jsx": {
     id: "root";
-    page: "/" | "/api/recommendation-performance" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/onboarding/filters" | "/api/filter-analytics" | "/api/recommendations" | "/api/search-insights" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/diversity" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/onboarding/data-quality" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/settings" | "/app/filters";
+    page: "/" | "/api/recommendation-performance" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/webhooks/products/create" | "/webhooks/products/delete" | "/webhooks/products/update" | "/api/onboarding/filters" | "/api/filter-analytics" | "/api/recommendations" | "/api/search-insights" | "/api/admin/filters" | "/api/sync-status" | "/api/analytics" | "/api/diversity" | "/api/products" | "/api/filters" | "/api/similar" | "/api/sorting" | "/api/events" | "/api/search" | "/auth/login" | "/api/sync" | "/auth/*" | "/app" | "/app/onboarding/data-quality" | "/app/onboarding/storefront" | "/app/onboarding/complete" | "/app/onboarding/filters" | "/app/onboarding/sorting" | "/app/onboarding/welcome" | "/app/onboarding" | "/app/onboarding/sync" | "/app/onboarding/ai" | "/app/additional" | "/app/dashboard" | "/app/settings" | "/app/filters";
   };
   "routes/api.recommendation-performance.jsx": {
     id: "routes/api.recommendation-performance";
@@ -186,6 +189,10 @@ type RouteFiles = {
   "routes/api.diversity.jsx": {
     id: "routes/api.diversity";
     page: "/api/diversity";
+  };
+  "routes/api.products.jsx": {
+    id: "routes/api.products";
+    page: "/api/products";
   };
   "routes/api.filters.jsx": {
     id: "routes/api.filters";
@@ -301,6 +308,7 @@ type RouteModules = {
   "routes/api.sync-status": typeof import("./app/routes/api.sync-status.jsx");
   "routes/api.analytics": typeof import("./app/routes/api.analytics.jsx");
   "routes/api.diversity": typeof import("./app/routes/api.diversity.jsx");
+  "routes/api.products": typeof import("./app/routes/api.products.jsx");
   "routes/api.filters": typeof import("./app/routes/api.filters.jsx");
   "routes/api.similar": typeof import("./app/routes/api.similar.jsx");
   "routes/api.sorting": typeof import("./app/routes/api.sorting.jsx");

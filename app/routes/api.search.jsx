@@ -54,7 +54,7 @@ export const action = async ({ request }) => {
         const aiResults = await aiSearch(shop, {
           query_text: query,
           filters,
-          limit: 10,
+          limit: 12,
         });
 
         products = await hydrateProducts(
@@ -72,7 +72,7 @@ export const action = async ({ request }) => {
             ...filterQuery,
           },
           orderBy: sortingQuery,
-          take: 20,
+          take: 12,
         });
       }
 
@@ -100,7 +100,7 @@ export const action = async ({ request }) => {
         added_to_cart_ids: behavior.cart.slice(0, 10),
         purchased_ids: behavior.purchased.slice(0, 10),
         filters: {},
-        limit: 10,
+        limit: 12,
       });
 
       products = await hydrateProducts(
@@ -120,11 +120,11 @@ export const action = async ({ request }) => {
     // =========================================================
     // 🔥 5. FINAL FALLBACK (DB latest products)
     // =========================================================
-    // return await prisma.product.findMany({
-    //   where: { storeId: store.id },
-    //   orderBy: { createdAt: "desc" },
-    //   take: 20,
-    // });
+    return await prisma.product.findMany({
+      where: { storeId: store.id },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+    });
   } catch (error) {
     console.error("Search API Error:", error);
     return ({ error: "Internal Server Error" }, { status: 500 });
