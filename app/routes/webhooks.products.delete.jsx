@@ -13,11 +13,22 @@ export const action = async ({ request }) => {
   //   const payload = await request.json();
   const shop = request.headers.get("x-shopify-shop-domain");
 
-
   await productSyncQueue.add("webhook-product-delete", {
     productId: payload.id,
     shop,
   });
+
+  await fetch(
+    `${process.env.AI_BASE_URL}/sync/${shop}/products/${payload.id}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  )
+    .then(console.log("Product delete from Ai"))
+    .catch((err) => console.log(err));
 
   return new Response("Queued");
 };
