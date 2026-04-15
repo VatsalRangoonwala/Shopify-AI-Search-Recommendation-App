@@ -62,8 +62,19 @@ function guessUiType(key) {
 }
 
 export function normalizeValue(value) {
-  return String(value).trim();
+  const trimmed = String(value).trim()
+  return toCapitalize(trimmed);
 }
+
+const toCapitalize = (input) => {
+  if (!input || typeof input !== "string") return "";
+
+  return input
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
 export function isUsefulFilterKey(key) {
   const badPatterns = [
@@ -182,12 +193,7 @@ export async function updateFiltersForProductChange(oldProduct, newProduct) {
     let firstAdded = true;
     for (const value of newSet) {
       if (!oldSet.has(value)) {
-        await incrementFilterValue(
-          newProduct.storeId,
-          key,
-          value,
-          firstAdded,
-        );
+        await incrementFilterValue(newProduct.storeId, key, value, firstAdded);
         firstAdded = false;
       }
     }
@@ -197,7 +203,13 @@ export async function updateFiltersForProductChange(oldProduct, newProduct) {
   const newHasPrice = newProduct.minPrice != null;
 
   if (oldHasPrice && !newHasPrice) {
-    await decrementFilterValue(newProduct.storeId, "price", null, true, oldProduct);
+    await decrementFilterValue(
+      newProduct.storeId,
+      "price",
+      null,
+      true,
+      oldProduct,
+    );
   }
 
   if (!oldHasPrice && newHasPrice) {
@@ -235,13 +247,29 @@ export async function decrementFilterValue(
       },
     });
 
-    const updatedFilter = await prisma.filter.findUnique({
-      where: { id: existingFilter.id },
+    const agg = await prisma.product.aggregate({
+      where: {
+        storeId,
+        NOT: { id: product.id },
+      },
+      _min: { minPrice: true },
+      _max: { maxPrice: true },
     });
 
-    if (updatedFilter.productCount <= 0) {
+    if (!agg._min.minPrice && !agg._max.maxPrice) {
       await prisma.filter.delete({ where: { id: existingFilter.id } });
+      return;
     }
+
+    await prisma.filter.update({
+      where: { id: existingFilter.id },
+      data: {
+        values: [
+          String(agg._min.minPrice ?? 0),
+          String(agg._max.maxPrice ?? 0),
+        ],
+      },
+    });
 
     return;
   }
@@ -299,6 +327,7 @@ export async function decrementFilterValue(
   if (updatedFilter.productCount <= 0) {
     await prisma.filter.delete({ where: { id: existingFilter.id } });
   }
+  return;
 }
 
 export async function removeProductFromFilters(product) {
@@ -339,34 +368,45 @@ export async function incrementFilterValue(storeId, key, value, isFirstValue) {
   // PRICE FILTER (special case)
   // ----------------------------
   if (isPrice) {
-    if (existingFilter) {
-      return prisma.filter.update({
-        where: {
-          id: existingFilter.id,
-        },
+    const productMin = value?.min ?? 0;
+    const productMax = value?.max ?? 0;
+
+    if (!existingFilter) {
+      return prisma.filter.create({
         data: {
-          productCount: {
-            increment: 1,
-          },
+          storeId,
+          key: "price",
+          label: "Price",
+          source: "system",
+          sourceField: "minPrice,maxPrice",
+          values: [String(productMin), String(productMax + 1)],
+          productCount: 1,
+          uniqueCount: 1,
+          valueType: "range",
+          uiType: "slider",
+          status: "selected",
+          isVisible: true,
+          position: 0,
         },
-      }); // price filter already exists, no need to increment blindly
+      });
     }
 
-    return prisma.filter.create({
+    const currentMin = parseFloat(existingFilter.values[0]) ?? productMin;
+    const currentMax = parseFloat(existingFilter.values[1]) ?? productMax;
+
+    const newMin =
+      productMin != null ? Math.min(currentMin, productMin) : currentMin;
+
+    const newMax =
+      productMax != null ? Math.max(currentMax, productMax) : currentMax;
+
+    return prisma.filter.update({
+      where: { id: existingFilter.id },
       data: {
-        storeId,
-        key: "price",
-        label: "Price",
-        source: "system",
-        sourceField: "minPrice,maxPrice",
-        values: [],
-        productCount: 1,
-        uniqueCount: 1,
-        valueType: "range",
-        uiType: "slider",
-        status: "selected",
-        isVisible: true,
-        position: 0,
+        values: [newMin.toString(), newMax.toString()],
+        productCount: {
+          increment: 1,
+        },
       },
     });
   }
@@ -436,10 +476,15 @@ export async function addProductToFilters(product) {
     }
   }
 
-  if (product.minPrice != null) {
-    await incrementFilterValue(product.storeId, "price", null);
+  if (product.minPrice != null || product.maxPrice != null) {
+    await incrementFilterValue(product.storeId, "price", {
+      min: product.minPrice,
+      max: product.maxPrice,
+    });
   }
+  return;
 }
+
 export function extractFilterableValues(product, productIdRef) {
   const filterMap = new Map();
 

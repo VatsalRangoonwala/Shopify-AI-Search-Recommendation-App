@@ -122,6 +122,72 @@ export function normalizeMetafields(metafields) {
   return result;
 }
 
+function levenshtein(a, b) {
+  const matrix = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b[i - 1] === a[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] =
+          1 +
+          Math.min(
+            matrix[i - 1][j], // deletion
+            matrix[i][j - 1], // insertion
+            matrix[i - 1][j - 1], // substitution
+          );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
+function similarity(a, b) {
+  const distance = levenshtein(a, b);
+  const maxLen = Math.max(a.length, b.length);
+
+  if (maxLen === 0) return 1;
+
+  return 1 - distance / maxLen;
+}
+
+export function baseNormalize(value) {
+  if (!value) return null;
+
+  return String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[\s\-_]+/g, " ") // normalize separators
+    .replace(/[^\w\s]/g, "") // remove special chars
+    .trim();
+}
+
+export function resolveCanonicalValue(existingValues, newValue) {
+  if (!newValue) return null;
+
+  for (const existing of existingValues) {
+    if (Math.abs(existing.length - newValue.length) > 3) continue;
+
+    const score = similarity(existing, newValue);
+
+    if (score > 0.85) {
+      return existing;
+    }
+  }
+
+  return newValue;
+}
+
 export function buildProductAttributes({
   product = {},
   variants = [],
@@ -134,16 +200,20 @@ export function buildProductAttributes({
     if (!key || !value) return;
 
     const normalizedKey = normalizeKey(key);
-    const normalizedValue = String(value).trim();
+    const baseVal = baseNormalize(value);
 
-    if (!normalizedValue) return;
+    if (!baseVal) return;
 
     if (!attributes[normalizedKey]) {
       attributes[normalizedKey] = [];
     }
 
-    if (!attributes[normalizedKey].includes(normalizedValue)) {
-      attributes[normalizedKey].push(normalizedValue);
+    const existingValues = attributes[normalizedKey];
+
+    const canonical = resolveCanonicalValue(existingValues, baseVal);
+
+    if (!existingValues.includes(canonical)) {
+      existingValues.push(canonical);
     }
   };
 
