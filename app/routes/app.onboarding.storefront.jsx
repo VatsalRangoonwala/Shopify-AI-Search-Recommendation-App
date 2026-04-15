@@ -49,8 +49,8 @@ const Storefront = () => {
             </Text>
             <List type="number">
               <List.Item>Open your Shopify Theme Editor</List.Item>
-              <List.Item>Navigate to the search page template</List.Item>
-              <List.Item>Add the "AI Search" app block</List.Item>
+              <List.Item>Navigate to the recommendation and intent-based search interface</List.Item>
+              <List.Item>Add the "AI Discovery Engine" app block</List.Item>
               <List.Item>Position and save your changes</List.Item>
             </List>
           </BlockStack>
@@ -89,7 +89,7 @@ const Storefront = () => {
           <Box paddingBlockStart="200">
             <Button
               variant="primary"
-              onClick={() => navigate("/app/onboarding/ai")}
+              onClick={() => navigate("/app/onboarding/complete")}
             >
               Continue
             </Button>

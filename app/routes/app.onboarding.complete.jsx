@@ -29,7 +29,7 @@ const Complete = () => {
   const navigate = useNavigate();
 
   return (
-    <OnboardingLayout currentStep={8}>
+    <OnboardingLayout currentStep={7}>
       <Card>
         <BlockStack gap="600">
           <BlockStack gap="300" inlineAlign="center">
@@ -64,9 +64,6 @@ const Complete = () => {
           <InlineStack gap="300">
             <Button variant="primary" onClick={() => navigate("/app/dashboard")}>
               Go to Dashboard
-            </Button>
-            <Button onClick={() => window.open("#", "_blank")}>
-              View Store
             </Button>
           </InlineStack>
         </BlockStack>

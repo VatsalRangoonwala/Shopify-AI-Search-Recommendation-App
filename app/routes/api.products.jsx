@@ -5,20 +5,28 @@ import { buildSortingQuery } from "../services/sorting.service.js";
 export const action = async ({ request }) => {
   try {
     const body = await request.json();
-    const {
+    let {
       shop,
       page = 1,
-      perPage = 12,
+      perPage = 24,
       excludeIds = [],
       filters = {},
       sort,
     } = body;
 
     const store = await prisma.store.findUnique({ where: { shop } });
-    if (!store) return { products: [], total: 0, page: Number(page), perPage: Number(perPage) };
+    if (!store)
+      return {
+        products: [],
+        total: 0,
+        page: Number(page),
+        perPage: Number(perPage),
+      };
 
     const [filterConfig, sortingConfig] = await Promise.all([
-      prisma.filter.findMany({ where: { storeId: store.id, status: "selected" } }),
+      prisma.filter.findMany({
+        where: { storeId: store.id, status: "selected" },
+      }),
       prisma.sorting.findMany({ where: { storeId: store.id, isActive: true } }),
     ]);
 
@@ -31,6 +39,9 @@ export const action = async ({ request }) => {
     }
 
     const total = await prisma.product.count({ where });
+    if (page == 1) {
+      perPage = 12;
+    }
 
     const skip = (Number(page) - 1) * Number(perPage);
 

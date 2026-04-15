@@ -11,7 +11,7 @@ const STEPS = [
   { label: "Filters", path: "/app/onboarding/filters" },
   { label: "Sorting", path: "/app/onboarding/sorting" },
   { label: "Storefront", path: "/app/onboarding/storefront" },
-  { label: "AI", path: "/app/onboarding/ai" },
+  // { label: "AI", path: "/app/onboarding/ai" },
   { label: "Complete", path: "/app/onboarding/complete" },
 ];
 
