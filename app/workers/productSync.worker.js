@@ -100,9 +100,11 @@ const worker = new Worker(
         break;
       }
 
+      case "webhook-product-update":
       case "webhook-product-create": {
         const normalized = normalizeWebhookProduct(job.data.product);
 
+        // 1. Get the "before" state
         const existing = await prisma.product.findUnique({
           where: {
             storeId_shopifyProductId: {
@@ -112,6 +114,7 @@ const worker = new Worker(
           },
         });
 
+        // 2. Perform the Upsert
         const saved = await prisma.product.upsert({
           where: {
             storeId_shopifyProductId: {
@@ -123,48 +126,56 @@ const worker = new Worker(
           create: { ...normalized, storeId: store.id },
         });
 
-        if (existing) await updateFiltersForProductChange(existing, saved);
-        else await addProductToFilters(saved);
-
-        break;
-      }
-
-      case "webhook-product-update": {
-        const { product } = job.data;
-
-        const oldProduct = await prisma.product.findUnique({
-          where: {
-            storeId_shopifyProductId: {
-              shopifyProductId: product.id.toString(),
-              storeId: store.id,
-            },
-          },
-        });
-
-        const normalized = normalizeWebhookProduct(product);
-
-        const newProduct = await prisma.product.upsert({
-          where: {
-            storeId_shopifyProductId: {
-              storeId: store.id,
-              shopifyProductId: normalized.shopifyProductId.toString(),
-            },
-          },
-          update: normalized,
-          create: {
-            ...normalized,
-            storeId: store.id,
-          },
-        });
-
-        if (oldProduct) {
-          await updateFiltersForProductChange(oldProduct, newProduct);
-        } else {
-          await addProductToFilters(newProduct);
+        // 3. Logic Branching
+        try {
+          if (existing) {
+            await updateFiltersForProductChange(existing, saved);
+          } else {
+            await addProductToFilters(saved);
+          }
+        } catch (filterError) {
+          console.error("DB saved, but Filter Sync failed:", filterError);
         }
 
         break;
       }
+
+      // case "webhook-product-update": {
+      //   const { product } = job.data;
+
+      //   const oldProduct = await prisma.product.findUnique({
+      //     where: {
+      //       storeId_shopifyProductId: {
+      //         shopifyProductId: product.id.toString(),
+      //         storeId: store.id,
+      //       },
+      //     },
+      //   });
+
+      //   const normalized = normalizeWebhookProduct(product);
+
+      //   const newProduct = await prisma.product.upsert({
+      //     where: {
+      //       storeId_shopifyProductId: {
+      //         storeId: store.id,
+      //         shopifyProductId: normalized.shopifyProductId.toString(),
+      //       },
+      //     },
+      //     update: normalized,
+      //     create: {
+      //       ...normalized,
+      //       storeId: store.id,
+      //     },
+      //   });
+
+      //   if (oldProduct) {
+      //     await updateFiltersForProductChange(oldProduct, newProduct);
+      //   } else {
+      //     await addProductToFilters(newProduct);
+      //   }
+
+      //   break;
+      // }
 
       case "webhook-product-delete": {
         const existing = await prisma.product.findUnique({

@@ -21,14 +21,12 @@ export const action = async ({ request }) => {
   await fetch(
     `${process.env.AI_BASE_URL}/sync/${shop}/products/${payload.id}`,
     {
-      method: "POST",
+      method: "DELETE",
       headers: {
         "Content-Type": "application/json",
       },
     },
-  )
-    .then(console.log("Product delete from Ai"))
-    .catch((err) => console.log(err));
+  ).catch((err) => console.log(err));
 
   return new Response("Queued");
 };
