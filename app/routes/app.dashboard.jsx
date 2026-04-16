@@ -1,14 +1,5 @@
-import React, { useState } from "react";
-import {
-  Page,
-  Layout,
-  Card,
-  Text,
-  BlockStack,
-  InlineStack,
-  Icon,
-  Box,
-} from "@shopify/polaris";
+import { useState } from "react";
+import { Page, BlockStack } from "@shopify/polaris";
 import { useFetcher, useLoaderData } from "react-router";
 import KPISection from "../components/dashboard/KPISection.jsx";
 import SearchInsights from "../components/dashboard/SearchInsights.jsx";
@@ -17,11 +8,14 @@ import FilterAnalytics from "../components/dashboard/FilterAnalytics.jsx";
 import TrendsChart from "../components/dashboard/TrendsChart.jsx";
 import { authenticate } from "../shopify.server.js";
 import { getTrendsData } from "../services/trends.service.js";
-import { getAnalytics } from "../services/analytics.service.js";
+import {
+  fetchTotalProductsCount,
+  getAnalytics,
+} from "../services/analytics.service.js";
 import prisma from "../db.server.js";
 
 export const loader = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
 
   const store = await prisma.store.findUnique({
     where: {
@@ -31,9 +25,18 @@ export const loader = async ({ request }) => {
 
   const initialData = await getAnalytics(store.id);
   const initialTrends = await getTrendsData(store.id, "week");
+  const totalProducts = await fetchTotalProductsCount(admin);
+  const syncedProducts = await prisma.product.count({
+    where: { storeId: store.id },
+  });
 
   return {
-    performance: { ...initialData, trends: initialTrends },
+    performance: {
+      ...initialData,
+      trends: initialTrends,
+      totalProducts: totalProducts,
+      syncedProducts: syncedProducts,
+    },
   };
 };
 

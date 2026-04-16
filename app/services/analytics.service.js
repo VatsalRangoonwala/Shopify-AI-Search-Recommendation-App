@@ -1,16 +1,11 @@
 import prisma from "../db.server.js";
 
 export async function getAnalytics(storeId) {
-  const evenTypes = [
-    "search",
-    "recommendation_click",
-    "purchase",
-  ];
+  const evenTypes = ["search", "recommendation_click", "purchase"];
 
-  const [totalSearches, recommendationClicks, purchases] =
-    await Promise.all(
-      evenTypes.map((type) => prisma.event.count({ where: { storeId, type } })),
-    );
+  const [totalSearches, recommendationClicks, purchases] = await Promise.all(
+    evenTypes.map((type) => prisma.event.count({ where: { storeId, type } })),
+  );
 
   // const productMap = {};
 
@@ -78,4 +73,17 @@ export async function getAnalytics(storeId) {
       revenueInfluenced: "$0",
     },
   };
+}
+
+export async function fetchTotalProductsCount(admin) {
+  const query = `query {
+  productsCount {
+    count
+    precision
+  }
+}`;
+  const response = await admin.graphql(query);
+  const data = await response.json();
+  const count = data?.data?.productsCount?.count;
+  return count;
 }
