@@ -1,40 +1,96 @@
-<div class="ai-sorting">
-  <label>{{ block.settings.label }}</label>
+{%- comment -%}
+  Syncing with global theme settings for a native look and feel.
+{%- endcomment -%}
 
-  <select id="ai-sorting-select"></select>
+{% style %}
+  .ai-sorting-{{ block.id }} {
+    margin-bottom: 20px;
+    /* Using global theme settings for font and spacing */
+    font-family: {{ settings.type_body_font.family }}, {{ settings.type_body_font.fallback_families }};
+    color: {{ settings.colors_text }};
+  }
+
+  .ai-sorting-{{ block.id }} label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: {{ settings.type_body_font.weight }};
+  }
+
+  .ai-sorting-{{ block.id }} select {
+    padding: 12px;
+    width: 100%;
+    cursor: pointer;
+    /* Matching theme's input styles */
+    background-color: {{ settings.colors_background_1 }};
+    color: {{ settings.colors_text }};
+    border: 1px solid rgba({{ settings.colors_text | color_extract: 'red' }}, {{ settings.colors_text | color_extract: 'green' }}, {{ settings.colors_text | color_extract: 'blue' }}, 0.2);
+    border-radius: {{ settings.inputs_radius }}px;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  /* Optional: Simple focus state to match Shopify themes */
+  .ai-sorting-{{ block.id }} select:focus {
+    outline: none;
+    border-color: {{ settings.colors_accent_1 }};
+    box-shadow: 0 0 0 1px {{ settings.colors_accent_1 }};
+  }
+{% endstyle %}
+
+<div class="ai-sorting-{{ block.id }}" data-block-id="{{ block.id }}">
+  <label for="sorting-select-{{ block.id }}">
+    {{ block.settings.label | escape }}
+  </label>
+
+  <select id="sorting-select-{{ block.id }}">
+    <option value="">Loading sorting options...</option>
+  </select>
 </div>
 
-<style>
-  .ai-sorting {
-    margin-bottom: 20px;
-  }
-
-  .ai-sorting select {
-    padding: 8px;
-    width: 100%;
-  }
-</style>
-
 <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    const shop = '{{ shop.domain }}';
+  (function() {
+    async function initSorting() {
+      const blockId = '{{ block.id }}';
+      const select = document.getElementById(`sorting-select-${blockId}`);
+      
+      try {
+        // shop.permanent_domain is safer (.myshopify.com) than .domain (custom domain)
+        const shop = '{{ shop.permanent_domain }}';
+        
+        const res = await fetch(`/apps/api/sorting?shop=${shop}`, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+            'Content-Type': 'application/json'
+          },
+        });
 
-    const res = await fetch(`/apps/api/sorting?shop=${shop}`, {
-      headers: {
-        'ngrok-skip-browser-warning': 'true',
-      },
-    });
-    const sorting = await res.json();
+        if (!res.ok) throw new Error('API Error');
+        
+        const sorting = await res.json();
 
-    const select = document.getElementById('ai-sorting-select');
+        // Clear the loading state
+        select.innerHTML = '';
 
-    sorting.forEach((option) => {
-      const opt = document.createElement('option');
-      opt.value = option.name;
-      opt.textContent = option.label;
-      select.appendChild(opt);
-    });
-  });
+        sorting.forEach((option) => {
+          const opt = document.createElement('option');
+          opt.value = option.name;
+          opt.textContent = option.label;
+          select.appendChild(opt);
+        });
+
+      } catch (error) {
+        console.error('AI Sorting failed to load:', error);
+        select.innerHTML = '<option value="">Sorting unavailable</option>';
+      }
+    }
+
+    // Runs on load
+    if (document.readyState === 'complete') {
+      initSorting();
+    } else {
+      window.addEventListener('load', initSorting);
+    }
+  })();
 </script>
 
 {% schema %}
