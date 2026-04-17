@@ -8,19 +8,26 @@ export const action = async ({ request }) => {
 
   const store = await prisma.store.findUnique({
     where: { shop },
-  });
-
-  const aiResults = await aiSimilar(shop, productId, {
-    filters: {},
-    limit: limit,
-    diversity_penalty: store.diversity,
-  });
-  const ids = aiResults.results.map((r) => r.product_id.toString());
-  const products = await prisma.product.findMany({
-    where: {
-      shopifyProductId: { in: ids },
-      storeId: store.id,
+    select: {
+      id: true,
+      diversity: true,
     },
   });
-  return products;
+
+  if (!store) {
+    return [];
+  }
+
+  const aiResults = await aiSimilar(
+    shop,
+    productId,
+    {
+      filters: {},
+      limit,
+      diversity_penalty: store.diversity,
+    },
+    { signal: request.signal },
+  );
+
+  return hydrateProducts(store.id, aiResults);
 };

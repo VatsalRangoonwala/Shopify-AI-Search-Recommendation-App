@@ -97,8 +97,8 @@
     margin-bottom: 24px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--color-border);
-    {% comment %} max-height: 300px;
-    overflow-y: auto; {% endcomment %}
+    max-height: 300px;
+    overflow-y: auto;
   }
   .ecom-filter-group:last-child {
     border-bottom: none;
@@ -215,7 +215,7 @@
   }
   .range-slider {
     position: relative;
-    width: 100%;
+    width: 95%;
     height: 6px;
     background-color: var(--color-border);
     border-radius: 4px;
@@ -455,9 +455,30 @@
     color: #fff;
     border-color: var(--color-primary);
   }
+  .ecom-pagination span {
+    color: var(--color-text-light);
+    min-width: 72px;
+    text-align: center;
+  }
 </style>
 
 <script>
+  let currentSearchController = null;
+  let currentBrowseController = null;
+  const DEFAULT_PER_PAGE = 12;
+  const RECOMMENDATION_LIMIT = 12;
+
+  function debounce(fn, delay = 400) {
+    let timer;
+
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  }
+
+  const debouncedFetchProducts = debounce(fetchProducts, 400);
+  const debouncedLoadProducts = debounce(() => loadPaginatedProducts(1), 400);
   // --- Shared Utilities & Tracking ---
   function getOrCreateSessionId() {
     let sessionId = localStorage.getItem('ai_session_id');
@@ -538,89 +559,19 @@
     `;
   }
 
-  // Helper to mount a product card element and attach handlers
-  function mountProductCard(p, grid) {
+  function createProductCardElement(p) {
     const card = document.createElement('div');
     card.className = 'ecom-card';
+
+    // 🔥 store all needed data
+    card.dataset.id = p.shopifyProductId;
+    card.dataset.handle = p.handle;
+    card.dataset.variantId = p.defaultVariantId || '';
+    card.dataset.recommended = p.isRecommended ? 'true' : 'false';
+
     card.innerHTML = createProductCardHTML(p);
-    card.addEventListener('click', async () => {
-      if (p.isRecommended) publishPixelEvent('ai_recommendation_click', { productId: p.shopifyProductId });
-      publishPixelEvent('view', { productId: p.shopifyProductId });
 
-      if (p.handle) {
-        window.location.href = `/products/${p.handle}`;
-      } else {
-        console.log('Product handle is missing from the API response.');
-      }
-    });
-
-    const addBtn = card.querySelector('.add-btn');
-    if (addBtn) {
-      addBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const button = e.target;
-        const originalText = button.textContent;
-
-        button.textContent = 'Adding...';
-        button.disabled = true;
-
-        try {
-          if (p.isRecommended) publishPixelEvent('ai_recommendation_click', { productId: p.shopifyProductId });
-          publishPixelEvent('add_to_cart', { productId: p.shopifyProductId });
-
-          const response = await fetch('/cart/add.js', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              items: [
-                {
-                  id: p.variants?.[0]?.id,
-                  quantity: 1,
-                },
-              ],
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.description || 'Error adding to cart');
-          }
-
-          button.textContent = 'Added ✓';
-          button.style.backgroundColor = '#28a745';
-          button.style.color = '#fff';
-
-          document.documentElement.dispatchEvent(new CustomEvent('cart:build'));
-          window.location.href = `/cart`;
-        } catch (err) {
-          console.error('Failed to add to cart:', err);
-          button.textContent = 'Sold Out / Error';
-        } finally {
-          setTimeout(() => {
-            button.textContent = originalText;
-            button.disabled = false;
-            button.style.backgroundColor = '';
-            button.style.color = '';
-          }, 2000);
-        }
-      });
-    }
-
-    const recBtn = card.querySelector('.rec-btn');
-    if (recBtn) {
-      recBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        if (p.isRecommended) publishPixelEvent('ai_recommendation_click', { productId: p.shopifyProductId });
-        publishPixelEvent('view', { productId: p.shopifyProductId });
-        if (p.handle) {
-          window.location.href = `/products/${p.handle}`;
-        } else {
-          console.log('Product handle is missing from the API response.');
-        }
-      });
-    }
-
-    grid.appendChild(card);
+    return card;
   }
 
   // --- Dynamic UI Rendering ---
@@ -730,13 +681,13 @@
         rangeMin.value = minVal;
         rangeMax.value = maxVal;
         updateSlider.call(rangeMin);
-        fetchProducts();
+        debouncedFetchProducts();
       }
 
       rangeMin.addEventListener('input', updateSlider);
       rangeMax.addEventListener('input', updateSlider);
-      rangeMin.addEventListener('change', fetchProducts);
-      rangeMax.addEventListener('change', fetchProducts);
+      rangeMin.addEventListener('change', debouncedLoadProducts);
+      rangeMax.addEventListener('change', debouncedLoadProducts);
       inputMin.addEventListener('change', updateInputs);
       inputMax.addEventListener('change', updateInputs);
 
@@ -778,6 +729,7 @@
 
       // Render Sorting
       const select = document.getElementById('ai-sorting-select');
+      select.innerHTML = '<option value="">Newest</option>';
       sorting.forEach((option) => {
         const opt = document.createElement('option');
         opt.value = option.name;
@@ -818,46 +770,82 @@
 
     const sort = document.getElementById('ai-sorting-select')?.value;
 
+    if (currentBrowseController) currentBrowseController.abort();
+
+    const searchController = new AbortController();
+
     try {
+      if (currentSearchController) currentSearchController.abort();
+
+      currentSearchController = searchController;
+
       const res = await fetch(`/apps/api/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify({ shop, filters, sort, query, sessionId }),
+        signal: searchController.signal,
       });
 
       const products = await res.json();
 
-      const grid = document.getElementById('ai-products-grid');
+      if (searchController.signal.aborted || currentSearchController !== searchController) {
+        return;
+      }
+
       const recSection = document.getElementById('ai-recommended-section');
       const pagination = document.getElementById('ai-pagination');
-      grid.innerHTML = '';
+
       if (recSection) recSection.style.display = 'none';
       if (pagination) pagination.innerHTML = '';
+      const grid = document.getElementById('ai-products-grid');
 
-      products.forEach((p) => mountProductCard(p, grid));
+      const fragment = document.createDocumentFragment();
+
+      products.forEach((p) => {
+        const card = createProductCardElement(p);
+        fragment.appendChild(card);
+      });
+      grid.innerHTML = ''; // clear once
+      grid.appendChild(fragment); // append once
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error('Product fetch failed:', err);
+    } finally {
+      if (currentSearchController === searchController) {
+        currentSearchController = null;
+      }
     }
   }
 
   // --- Paginated browsing (recommended-first on page 1) ---
   let recommendedProductsCache = [];
   let recommendedIdsCache = [];
-  const DEFAULT_PER_PAGE = 24;
 
-  async function fetchRecommendations(shop, sessionId) {
-    try {
-      const res = await fetch('/apps/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-        body: JSON.stringify({ shop, sessionId }),
-      });
-      const data = await res.json();
-      return Array.isArray(data) ? data : [];
-    } catch (err) {
-      console.error('Failed to load recommendations', err);
-      return [];
+  function renderProductCards(grid, products) {
+    const fragment = document.createDocumentFragment();
+
+    products.forEach((product) => {
+      fragment.appendChild(createProductCardElement(product));
+    });
+
+    grid.innerHTML = '';
+    grid.appendChild(fragment);
+  }
+
+  async function fetchRecommendations(shop, sessionId, signal) {
+    const res = await fetch('/apps/api/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body: JSON.stringify({ shop, sessionId }),
+      signal,
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to load recommendations');
     }
+
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   }
 
   // Collect active filters from the UI (shared between search and pagination)
@@ -881,22 +869,45 @@
     return filters;
   }
 
-  async function fetchProductsPage(shop, page = 1, perPage = DEFAULT_PER_PAGE, excludeIds = [], filters = {}, sort) {
-    try {
-      const res = await fetch('/apps/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-        body: JSON.stringify({ shop, page, perPage, excludeIds, filters, sort }),
-      });
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        return { products: data, total: data.length };
-      }
-      return { products: data.products || [], total: data.total || 0 };
-    } catch (err) {
-      console.error('Failed to fetch paginated products', err);
-      return { products: [], total: 0 };
+  async function fetchProductsPage(
+    shop,
+    page = 1,
+    perPage = DEFAULT_PER_PAGE,
+    excludeIds = [],
+    filters = {},
+    sort,
+    signal
+  ) {
+    const res = await fetch('/apps/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body: JSON.stringify({ shop, page, perPage, excludeIds, filters, sort }),
+      signal,
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch paginated products');
     }
+
+    const data = await res.json();
+
+    if (Array.isArray(data)) {
+      return {
+        products: data,
+        hasNextPage: data.length === perPage,
+        hasPreviousPage: page > 1,
+        page,
+        perPage,
+      };
+    }
+
+    return {
+      products: data.products || [],
+      hasNextPage: Boolean(data.hasNextPage),
+      hasPreviousPage: Boolean(data.hasPreviousPage),
+      page: data.page || page,
+      perPage: data.perPage || perPage,
+    };
   }
 
   async function loadPaginatedProducts(page = 1) {
@@ -909,92 +920,232 @@
 
     const filters = getActiveFilters();
     const sort = document.getElementById('ai-sorting-select')?.value;
-
-    if (page === 1) {
-      recommendedProductsCache = await fetchRecommendations(shop, sessionId);
-      recommendedIdsCache = recommendedProductsCache.map((p) => p.shopifyProductId).filter(Boolean);
-    }
-
-    const { products, total } = await fetchProductsPage(
-      shop,
-      page,
-      DEFAULT_PER_PAGE,
-      recommendedIdsCache,
-      filters,
-      sort
-    );
-
     const recSection = document.getElementById('ai-recommended-section');
-    if (page === 1 && recommendedProductsCache.length) {
-      if (recSection) recSection.style.display = 'block';
-      recommendedProductsCache.forEach((p) => mountProductCard(p, recGrid || grid));
-    } else {
-      if (recSection) recSection.style.display = 'none';
-    }
 
-    products.forEach((p) => mountProductCard(p, grid));
-    renderPagination(total, page, DEFAULT_PER_PAGE);
+    if (currentSearchController) currentSearchController.abort();
+    if (currentBrowseController) currentBrowseController.abort();
+
+    const browseController = new AbortController();
+    currentBrowseController = browseController;
+
+    try {
+      if (page === 1) {
+        const [productsResult, recommendationsResult] = await Promise.allSettled([
+          fetchProductsPage(
+            shop,
+            1,
+            DEFAULT_PER_PAGE + RECOMMENDATION_LIMIT,
+            [],
+            filters,
+            sort,
+            browseController.signal
+          ),
+          fetchRecommendations(shop, sessionId, browseController.signal),
+        ]);
+
+        if (browseController.signal.aborted || currentBrowseController !== browseController) {
+          return;
+        }
+
+        const pageData =
+          productsResult.status === 'fulfilled'
+            ? productsResult.value
+            : {
+                products: [],
+                hasNextPage: false,
+                hasPreviousPage: false,
+                page: 1,
+                perPage: DEFAULT_PER_PAGE,
+              };
+
+        if (productsResult.status === 'rejected' && productsResult.reason?.name !== 'AbortError') {
+          console.error('Failed to fetch paginated products', productsResult.reason);
+        }
+
+        recommendedProductsCache = recommendationsResult.status === 'fulfilled' ? recommendationsResult.value : [];
+
+        if (recommendationsResult.status === 'rejected' && recommendationsResult.reason?.name !== 'AbortError') {
+          console.error('Failed to load recommendations', recommendationsResult.reason);
+        }
+
+        recommendedIdsCache = recommendedProductsCache.map((product) => product.shopifyProductId).filter(Boolean);
+
+        const dedupedProducts = pageData.products.filter(
+          (product) => !recommendedIdsCache.includes(product.shopifyProductId)
+        );
+        const visibleProducts = dedupedProducts.slice(0, DEFAULT_PER_PAGE);
+        const hasNextPage = dedupedProducts.length > DEFAULT_PER_PAGE || pageData.hasNextPage;
+
+        if (page === 1 && recommendedProductsCache.length) {
+          if (recSection) recSection.style.display = 'block';
+          renderProductCards(recGrid || grid, recommendedProductsCache);
+        } else if (recSection) {
+          recSection.style.display = 'none';
+        }
+
+        renderProductCards(grid, visibleProducts);
+        renderPagination(page, {
+          hasNextPage,
+          hasPreviousPage: false,
+        });
+        return;
+      }
+
+      const pageData = await fetchProductsPage(
+        shop,
+        page,
+        DEFAULT_PER_PAGE,
+        recommendedIdsCache,
+        filters,
+        sort,
+        browseController.signal
+      );
+
+      if (browseController.signal.aborted || currentBrowseController !== browseController) {
+        return;
+      }
+
+      if (recSection) recSection.style.display = 'none';
+      renderProductCards(grid, pageData.products);
+      renderPagination(pageData.page || page, {
+        hasNextPage: pageData.hasNextPage,
+        hasPreviousPage: pageData.hasPreviousPage,
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.error('Failed to load paginated products', err);
+    } finally {
+      if (currentBrowseController === browseController) {
+        currentBrowseController = null;
+      }
+    }
   }
 
-  function renderPagination(total, currentPage, perPage) {
+  function renderPagination(currentPage, pageInfo) {
     const container = document.getElementById('ai-pagination');
     if (!container) return;
     container.innerHTML = '';
-    const totalPages = Math.max(1, Math.ceil(total / perPage));
 
     const prev = document.createElement('button');
     prev.textContent = 'Prev';
-    prev.disabled = currentPage <= 1;
+    prev.disabled = !pageInfo.hasPreviousPage;
     prev.addEventListener('click', () => loadPaginatedProducts(currentPage - 1));
     container.appendChild(prev);
 
-    const start = Math.max(1, currentPage - 2);
-    const end = Math.min(totalPages, currentPage + 2);
-    if (start > 1) {
-      const first = document.createElement('button');
-      first.textContent = '1';
-      first.addEventListener('click', () => loadPaginatedProducts(1));
-      container.appendChild(first);
-      if (start > 2) {
-        const dots = document.createElement('span');
-        dots.textContent = '...';
-        container.appendChild(dots);
-      }
-    }
-
-    for (let i = start; i <= end; i++) {
-      const btn = document.createElement('button');
-      btn.textContent = String(i);
-      if (i === currentPage) btn.classList.add('active');
-      btn.addEventListener('click', () => loadPaginatedProducts(i));
-      container.appendChild(btn);
-    }
-
-    if (end < totalPages) {
-      if (end < totalPages - 1) {
-        const dots = document.createElement('span');
-        dots.textContent = '...';
-        container.appendChild(dots);
-      }
-      const last = document.createElement('button');
-      last.textContent = String(totalPages);
-      last.addEventListener('click', () => loadPaginatedProducts(totalPages));
-      container.appendChild(last);
-    }
+    const pageLabel = document.createElement('span');
+    pageLabel.textContent = `Page ${currentPage}`;
+    container.appendChild(pageLabel);
 
     const next = document.createElement('button');
     next.textContent = 'Next';
-    next.disabled = currentPage >= totalPages;
+    next.disabled = !pageInfo.hasNextPage;
     next.addEventListener('click', () => loadPaginatedProducts(currentPage + 1));
     container.appendChild(next);
   }
 
   // --- Initialization & Event Listeners ---
-  document.addEventListener('DOMContentLoaded', async () => {
+  document.addEventListener('DOMContentLoaded', () => {
     const shop = '{{ shop.domain }}';
-    await loadFiltersAndSorting(shop);
     // Default: show recommendations + paginated product list
     loadPaginatedProducts(1);
+    loadFiltersAndSorting(shop);
+    const grids = [document.getElementById('ai-products-grid'), document.getElementById('ai-recommended-grid')];
+
+    grids.forEach((grid) => {
+      if (!grid) return;
+
+      grid.addEventListener('click', async (e) => {
+        const card = e.target.closest('.ecom-card');
+        if (!card) return;
+
+        const productId = card.dataset.id;
+        const handle = card.dataset.handle;
+        const variantId = card.dataset.variantId;
+        const isRecommended = card.dataset.recommended === 'true';
+
+        // =========================
+        // 🛒 ADD TO CART
+        // =========================
+        if (e.target.classList.contains('add-btn')) {
+          e.stopPropagation();
+
+          const button = e.target;
+          const originalText = button.textContent;
+
+          button.textContent = 'Adding...';
+          button.disabled = true;
+
+          try {
+            if (isRecommended) {
+              publishPixelEvent('ai_recommendation_click', { productId });
+            }
+
+            publishPixelEvent('add_to_cart', { productId });
+
+            const response = await fetch('/cart/add.js', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                items: [{ id: variantId, quantity: 1 }],
+              }),
+            });
+
+            if (!response.ok) throw new Error('Add to cart failed');
+
+            button.textContent = 'Added ✓';
+            button.style.backgroundColor = '#28a745';
+            button.style.color = '#fff';
+
+            document.documentElement.dispatchEvent(new CustomEvent('cart:build'));
+            window.location.href = `/cart`;
+          } catch (err) {
+            console.error(err);
+            button.textContent = 'Error';
+          } finally {
+            setTimeout(() => {
+              button.textContent = originalText;
+              button.disabled = false;
+              button.style.backgroundColor = '';
+              button.style.color = '';
+            }, 2000);
+          }
+
+          return;
+        }
+
+        // =========================
+        // 🔍 DETAILS BUTTON
+        // =========================
+        if (e.target.classList.contains('rec-btn')) {
+          e.stopPropagation();
+
+          if (isRecommended) {
+            publishPixelEvent('ai_recommendation_click', { productId });
+          }
+
+          publishPixelEvent('view', { productId });
+
+          if (handle) {
+            window.location.href = `/products/${handle}`;
+          }
+
+          return;
+        }
+
+        // =========================
+        // 🧭 CARD CLICK
+        // =========================
+        if (isRecommended) {
+          publishPixelEvent('ai_recommendation_click', { productId });
+        }
+
+        publishPixelEvent('view', { productId });
+
+        if (handle) {
+          window.location.href = `/products/${handle}`;
+        }
+      });
+    });
   });
 
   // Re-fetch products when checkboxes/swatches, sorting, or search changes
@@ -1004,9 +1155,8 @@
       e.target.matches('.ecom-swatch-input') ||
       e.target.id === 'ai-sorting-select'
     ) {
-      const query = document.getElementById('search-input')?.value || '';
-      if (query && query.trim().length > 0) fetchProducts();
-      else loadPaginatedProducts(1);
+      // 🔥 ALWAYS use DB API for filters/sort
+      debouncedLoadProducts();
     }
   });
 
@@ -1014,8 +1164,14 @@
   document.addEventListener('input', (e) => {
     if (e.target.id === 'search-input') {
       const q = e.target.value || '';
-      if (q && q.trim().length > 0) fetchProducts();
-      else loadPaginatedProducts(1);
+
+      if (q.trim().length > 0) {
+        // 🔥 ONLY HERE use AI
+        debouncedFetchProducts();
+      } else {
+        // 🔥 BACK TO DB
+        debouncedLoadProducts();
+      }
     }
   });
 </script>

@@ -1,6 +1,9 @@
 import prisma from "../db.server.js";
 import { aiRecommend } from "../services/ai.service.js";
-import { hydrateProducts } from "../services/recommendation.service.js";
+import {
+  hydrateProducts,
+  PRODUCT_CARD_SELECT,
+} from "../services/recommendation.service.js";
 import { getUserBehavior } from "../services/personalization.service.js";
 
 export const action = async ({ request }) => {
@@ -10,6 +13,10 @@ export const action = async ({ request }) => {
 
   const store = await prisma.store.findUnique({
     where: { shop },
+    select: {
+      id: true,
+      diversity: true,
+    },
   });
 
   if (!store) return [];
@@ -27,7 +34,8 @@ export const action = async ({ request }) => {
       purchased_ids: behavior.purchased.slice(0, 10),
       filters: {},
       limit: 12,
-    });
+      diversity_penalty: store.diversity,
+    }, { signal: request.signal });
   } catch (err) {
     console.log("AI failed → fallback");
 
@@ -51,5 +59,6 @@ async function fallbackProducts(storeId) {
     where: { storeId },
     orderBy: { createdAt: "desc" },
     take: 12,
+    select: PRODUCT_CARD_SELECT,
   });
 }

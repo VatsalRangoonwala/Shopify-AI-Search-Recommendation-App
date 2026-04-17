@@ -253,6 +253,10 @@ export function normalizeShopifyProduct(product) {
   const variants = product.variants?.edges?.map((v) => v.node) || [];
   const images = product.images?.edges?.map((img) => img.node) || [];
   const metafields = product.metafields?.edges?.map((m) => m.node) || [];
+  const normalizedVariants = variants.map((variant) => ({
+    ...variant,
+    id: extractShopifyId(variant.id),
+  }));
 
   const prices = variants
     .map((v) => parseFloat(v.price || 0))
@@ -301,7 +305,8 @@ export function normalizeShopifyProduct(product) {
     images,
 
     options: product.options || [],
-    variants: variants.map((v) => ({ ...v, id: extractShopifyId(v.id) })),
+    variants: normalizedVariants,
+    defaultVariantId: normalizedVariants[0]?.id || null,
 
     attributes,
     metafields: normalizeMetafields(metafields),
@@ -389,6 +394,7 @@ export function normalizeWebhookProduct(product) {
 
     options,
     variants: normalizedVariants,
+    defaultVariantId: normalizedVariants[0]?.id || null,
 
     attributes,
     metafields: normalizeMetafields(metafields),

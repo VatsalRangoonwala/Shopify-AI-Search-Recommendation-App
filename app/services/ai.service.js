@@ -1,92 +1,101 @@
 import { getCache, setCache } from "../utils/cache.js";
 
 const AI_BASE_URL = process.env.AI_BASE_URL;
+const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 3500);
 
-// 🔍 SEARCH
-export async function aiSearch(shop, input) {
-  // const cacheKey = `ai:search:${input.query_text}`;
+function buildCacheKey(prefix, shop, input) {
+  return `${prefix}:${shop}:${Buffer.from(JSON.stringify(input)).toString("base64url")}`;
+}
 
-  // const cached = await getCache(cacheKey);
-  // if (cached) {
-  //   console.log("⚡ AI search cache hit");
-  //   return cached;
-  // }
+function buildTimedSignal(parentSignal) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort(new Error("AI request timed out"));
+  }, AI_TIMEOUT_MS);
+
+  const abortFromParent = () => {
+    controller.abort(parentSignal?.reason || new Error("Request aborted"));
+  };
+
+  if (parentSignal) {
+    if (parentSignal.aborted) {
+      abortFromParent();
+    } else {
+      parentSignal.addEventListener("abort", abortFromParent, { once: true });
+    }
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup() {
+      clearTimeout(timeoutId);
+      parentSignal?.removeEventListener("abort", abortFromParent);
+    },
+  };
+}
+
+async function fetchAiJson(path, input, { signal, cacheKey, ttl } = {}) {
+  if (!AI_BASE_URL) {
+    throw new Error("AI_BASE_URL is not configured");
+  }
+
+  const cached = cacheKey ? await getCache(cacheKey) : null;
+
+  if (cached) {
+    return cached;
+  }
+
+  const { signal: timedSignal, cleanup } = buildTimedSignal(signal);
 
   try {
-    const res = await fetch(`${AI_BASE_URL}/search/${shop}`, {
+    const response = await fetch(`${AI_BASE_URL}${path}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(input),
+      signal: timedSignal,
     });
 
-    const data = await res.json();
+    if (!response.ok) {
+      throw new Error(`AI request failed with status ${response.status}`);
+    }
 
-    // await setCache(cacheKey, data, 300); // 5 min
+    const data = await response.json();
+
+    if (cacheKey && data) {
+      void setCache(cacheKey, data, ttl);
+    }
 
     return data;
-  } catch (error) {
-    console.error("AI failed");
-
-    // const fallback = await getCache(cacheKey);
-
-    if (fallback) return fallback;
-
-    throw error;
+  } finally {
+    cleanup();
   }
 }
 
-// 🎯 RECOMMEND
-export async function aiRecommend(shop, input) {
-  // const key = JSON.stringify(input);
-  // const cacheKey = `ai:recommend:${Buffer.from(key).toString("base64")}`;
-
-  // const cached = await getCache(cacheKey);
-  // if (cached) {
-  //   console.log("⚡ AI recommend cache hit");
-  //   return cached;
-  // }
-
-  const res = await fetch(`${AI_BASE_URL}/recommend/${shop}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(input),
+// Search
+export async function aiSearch(shop, input, options = {}) {
+  return fetchAiJson(`/search/${shop}`, input, {
+    ...options,
+    cacheKey: buildCacheKey("ai:search", shop, input),
+    ttl: 60,
   });
-
-  const data = await res.json();
-
-  // await setCache(cacheKey, data, 300);
-
-  return data;
 }
 
-// 🔗 SIMILAR
-export async function aiSimilar(shop, productId, input) {
-  // const cacheKey = `ai:similar:${productId}`;
+// Recommend
+export async function aiRecommend(shop, input, options = {}) {
+  return fetchAiJson(`/recommend/${shop}`, input, {
+    ...options,
+    cacheKey: buildCacheKey("ai:recommend", shop, input),
+    ttl: 120,
+  });
+}
 
-  // const cached = await getCache(cacheKey);
-  // if (cached) {
-  //   console.log("⚡ AI similar cache hit");
-  //   return cached;
-  // }
-
-  const res = await fetch(
-    `${AI_BASE_URL}/search/${shop}/similar/${productId}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(input),
-    },
-  );
-
-  const data = await res.json();
-
-  // await setCache(cacheKey, data, 600); // longer cache
-
-  return data;
+// Similar
+export async function aiSimilar(shop, productId, input, options = {}) {
+  return fetchAiJson(`/search/${shop}/similar/${productId}`, input, {
+    ...options,
+    cacheKey: buildCacheKey("ai:similar", shop, { productId, ...input }),
+    ttl: 180,
+  });
 }

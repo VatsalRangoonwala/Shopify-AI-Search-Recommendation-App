@@ -1,5 +1,19 @@
 import prisma from "../db.server.js";
 import { buildFilterQuery } from "../services/filter.service.js";
+import { PRODUCT_CARD_SELECT } from "../services/recommendation.service.js";
+
+const DEFAULT_PER_PAGE = 12;
+const MAX_PER_PAGE = 48;
+
+function clampPageSize(value) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_PER_PAGE;
+  }
+
+  return Math.min(Math.floor(parsed), MAX_PER_PAGE);
+}
 
 export const action = async ({ request }) => {
   try {
@@ -21,9 +35,10 @@ export const action = async ({ request }) => {
     if (!store)
       return {
         products: [],
-        total: 0,
         page: Number(page),
-        perPage: Number(perPage),
+        perPage: clampPageSize(perPage),
+        hasNextPage: false,
+        hasPreviousPage: Number(page) > 1,
       };
 
     const filtersKey = Object.keys(filters);
@@ -34,37 +49,43 @@ export const action = async ({ request }) => {
     let sortingQuery = { createdAt: "desc" };
 
     if (hasFilters || hasSort) {
-      const [filterConfig, sortingConfig] = await prisma.$transaction([
-        prisma.filter.findMany({
-          where: {
-            storeId: store.id,
-            status: "selected",
-            key: { in: filtersKey ?? [] },
-          },
-          select: {
-            key: true,
-            source: true,
-            sourceField: true,
-          },
-        }),
-        prisma.sorting.find({
-          where: {
-            storeId: store.id,
-            isActive: true,
-            name: sort.trim().toLowerCase(),
-          },
-          select: {
-            field: true,
-            order: true,
-          },
-        }),
+      const [filterConfig, sortingConfig] = await Promise.all([
+        hasFilters
+          ? prisma.filter.findMany({
+              where: {
+                storeId: store.id,
+                status: "selected",
+                key: { in: filtersKey ?? [] },
+              },
+              select: {
+                key: true,
+                source: true,
+                sourceField: true,
+              },
+            })
+          : [],
+        hasSort
+          ? prisma.sorting.findFirst({
+              where: {
+                storeId: store.id,
+                isActive: true,
+                name: sort.trim().toLowerCase(),
+              },
+              select: {
+                field: true,
+                order: true,
+              },
+            })
+          : null,
       ]);
 
-      if (sort.length > 0)
-        if (sortingConfig)
-          sortingQuery = { [sortingConfig.field]: sortingConfig.order };
-      if (filtersKey.length > 0)
+      if (hasSort && sortingConfig) {
+        sortingQuery = { [sortingConfig.field]: sortingConfig.order };
+      }
+
+      if (hasFilters) {
         filterQuery = buildFilterQuery(filterConfig, filters);
+      }
     }
 
     const where = { storeId: store.id, ...filterQuery };
@@ -72,38 +93,36 @@ export const action = async ({ request }) => {
       where.shopifyProductId = { notIn: excludeIds };
     }
 
-    const productCardSelect = {
-      id: true,
-      shopifyProductId: true,
-      handle: true,
-      title: true,
-      vendor: true,
-      featuredImage: true,
-      maxPrice: true,
-      compareAtMaxPrice: true,
-      variants: true,
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const pageSize = clampPageSize(perPage);
+    const skip = (pageNumber - 1) * pageSize;
+
+    const rows = await prisma.product.findMany({
+      where,
+      orderBy: sortingQuery || { createdAt: "desc" },
+      skip,
+      take: pageSize + 1,
+      select: PRODUCT_CARD_SELECT,
+    });
+
+    const hasNextPage = rows.length > pageSize;
+    const products = hasNextPage ? rows.slice(0, pageSize) : rows;
+
+    return {
+      products,
+      page: pageNumber,
+      perPage: pageSize,
+      hasNextPage,
+      hasPreviousPage: pageNumber > 1,
     };
-
-    if (page == 1) {
-      perPage = 12;
-    }
-
-    const skip = (Number(page) - 1) * Number(perPage);
-
-    const [products, total] = await prisma.$transaction([
-      prisma.product.findMany({
-        where,
-        orderBy: sortingQuery || { createdAt: "desc" },
-        skip,
-        take: Number(perPage),
-        select: productCardSelect,
-      }),
-      prisma.product.count({ where }),
-    ]);
-
-    return { products, total, page: Number(page), perPage: Number(perPage) };
   } catch (err) {
     console.error("Products API Error:", err);
-    return { products: [], total: 0, page: 1, perPage: 12 };
+    return {
+      products: [],
+      page: 1,
+      perPage: DEFAULT_PER_PAGE,
+      hasNextPage: false,
+      hasPreviousPage: false,
+    };
   }
 };

@@ -72,6 +72,7 @@ model Product {
 
   options            Json?
   variants           Json?
+  defaultVariantId   String?
 
   attributes         Json?
   metafields         Json?
@@ -87,6 +88,9 @@ model Product {
 
   @@unique([storeId, shopifyProductId])
   @@index([storeId])
+  @@index([storeId, createdAt])
+  @@index([storeId, maxPrice])
+  @@index([storeId, title])
   @@index([storeId, vendor])
   @@index([storeId, productType])
 }
@@ -146,6 +150,10 @@ model Event {
   timestamp  DateTime @default(now())
 
   store Store @relation(fields: [storeId], references: [id])
+
+  @@index([storeId, sessionId, timestamp])
+  @@index([storeId, customerId, timestamp])
+  @@index([storeId, type, timestamp])
 }
 
 model SyncJob {

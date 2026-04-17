@@ -267,7 +267,7 @@
               body: JSON.stringify({
                 items: [
                   {
-                    id: p.variants[0].id, // MUST be the variant ID
+                    id: p.defaultVariantId, // MUST be the variant ID
                     quantity: 1,
                   },
                 ],
@@ -320,7 +320,7 @@
   }
 
   // --- Initialization ---
-  document.addEventListener('DOMContentLoaded', fetchSimilarProducts());
+  document.addEventListener('DOMContentLoaded', fetchSimilarProducts);
 </script>
 
 {% schema %}
