@@ -38,7 +38,11 @@ export const action = async ({ request }) => {
         brand: product?.vendor ?? "",
         category: product?.productType ?? "",
         tags: product.tags ?? [],
-        metadata: { price: parseFloat(product.maxPrice) },
+        metadata: {
+          ...product.attributes,
+          price: parseFloat(product.maxPrice),
+          is_available: product.availableForSale,
+        },
       });
       await productSyncQueue.add("product-sync", {
         product,

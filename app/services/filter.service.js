@@ -11,43 +11,64 @@ export function toLabel(key) {
 export function buildFilterQuery(filterConfig, userFilters) {
   if (!userFilters || Object.keys(userFilters).length === 0) return {};
 
-  const query = {};
-  const orConditions = [];
+  const andConditions = [];
 
   for (const filter of filterConfig) {
     const value = userFilters[filter.key];
     if (!value || !Array.isArray(value) || value.length === 0) continue;
 
     if (filter.key === "price") {
-      query.minPrice = { gte: parseFloat(value[0]) };
-      query.maxPrice = { lte: parseFloat(value[1]) };
+      const min = Number.parseFloat(String(value[0] ?? "").trim());
+      const max = Number.parseFloat(String(value[1] ?? "").trim());
+
+      const priceCondition = {};
+
+      if (!Number.isNaN(min)) {
+        priceCondition.minPrice = { gte: min };
+      }
+
+      if (!Number.isNaN(max)) {
+        priceCondition.maxPrice = { lte: max };
+      }
+
+      if (Object.keys(priceCondition).length > 0) {
+        andConditions.push(priceCondition);
+      }
+
       continue;
     }
+
+    const values = value.map((v) => String(v).trim()).filter(Boolean);
+
+    if (values.length === 0) continue;
 
     if (filter.source !== "attribute") {
       if (filter.sourceField === "availableForSale") {
-        query[filter.sourceField] = value[0] !== "Out of Stock";
+        andConditions.push({
+          [filter.sourceField]: values[0] !== "Out of Stock",
+        });
       } else {
-        query[filter.sourceField] = { in: value };
+        andConditions.push({
+          [filter.sourceField]: { in: values },
+        });
       }
       continue;
     }
-
-    for (const v of value) {
-      orConditions.push({
+    andConditions.push({
+      OR: values.map((v) => ({
         attributes: {
           path: [filter.sourceField],
           array_contains: v,
         },
-      });
-    }
+      })),
+    });
   }
 
-  if (orConditions.length > 0) {
-    query.OR = orConditions;
-  }
+  if (andConditions.length === 0) return {};
 
-  return query;
+  return {
+    AND: andConditions,
+  };
 }
 
 function guessUiType(key) {
@@ -62,7 +83,7 @@ function guessUiType(key) {
 }
 
 export function normalizeValue(value) {
-  const trimmed = String(value).trim()
+  const trimmed = String(value).trim();
   return toCapitalize(trimmed);
 }
 

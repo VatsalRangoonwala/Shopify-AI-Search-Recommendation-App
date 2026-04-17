@@ -14,12 +14,12 @@ export const action = async ({ request }) => {
   //   const payload = await request.json();
 
   const shop = request.headers.get("x-shopify-shop-domain");
+  const normalized = normalizeWebhookProduct(payload);
 
   await productSyncQueue.add("webhook-product-update", {
-    product: payload,
+    product: normalized,
     shop,
   });
-  const normalized = normalizeWebhookProduct(payload);
   await productSyncQueue.add("ai-sync", {
     aiRes: [
       {
@@ -29,7 +29,11 @@ export const action = async ({ request }) => {
         brand: normalized?.vendor ?? "",
         category: normalized?.productType ?? "",
         tags: normalized.tags ?? [],
-        metadata: { price: parseFloat(normalized.maxPrice) },
+        metadata: {
+          ...normalized.attributes,
+          price: parseFloat(normalized.maxPrice),
+          is_available: normalized.availableForSale,
+        },
       },
     ],
     shop,

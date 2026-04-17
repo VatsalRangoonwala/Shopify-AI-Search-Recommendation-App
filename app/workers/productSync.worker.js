@@ -102,7 +102,7 @@ const worker = new Worker(
 
       case "webhook-product-update":
       case "webhook-product-create": {
-        const normalized = normalizeWebhookProduct(job.data.product);
+        const normalized = job.data.product;
 
         // 1. Get the "before" state
         const existing = await prisma.product.findUnique({

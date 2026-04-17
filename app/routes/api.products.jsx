@@ -1,6 +1,5 @@
 import prisma from "../db.server.js";
 import { buildFilterQuery } from "../services/filter.service.js";
-import { buildSortingQuery } from "../services/sorting.service.js";
 
 export const action = async ({ request }) => {
   try {
@@ -14,7 +13,11 @@ export const action = async ({ request }) => {
       sort,
     } = body;
 
-    const store = await prisma.store.findUnique({ where: { shop } });
+    const store = await prisma.store.findUnique({
+      where: { shop },
+      select: { id: true },
+    });
+
     if (!store)
       return {
         products: [],
@@ -23,34 +26,80 @@ export const action = async ({ request }) => {
         perPage: Number(perPage),
       };
 
-    const [filterConfig, sortingConfig] = await Promise.all([
-      prisma.filter.findMany({
-        where: { storeId: store.id, status: "selected" },
-      }),
-      prisma.sorting.findMany({ where: { storeId: store.id, isActive: true } }),
-    ]);
+    const filtersKey = Object.keys(filters);
+    const hasFilters = filtersKey.length > 0;
+    const hasSort = typeof sort === "string" && sort.trim().length > 0;
 
-    const filterQuery = buildFilterQuery(filterConfig, filters || {});
-    const sortingQuery = buildSortingQuery(sortingConfig || [], sort);
+    let filterQuery = {};
+    let sortingQuery = { createdAt: "desc" };
+
+    if (hasFilters || hasSort) {
+      const [filterConfig, sortingConfig] = await prisma.$transaction([
+        prisma.filter.findMany({
+          where: {
+            storeId: store.id,
+            status: "selected",
+            key: { in: filtersKey ?? [] },
+          },
+          select: {
+            key: true,
+            source: true,
+            sourceField: true,
+          },
+        }),
+        prisma.sorting.find({
+          where: {
+            storeId: store.id,
+            isActive: true,
+            name: sort.trim().toLowerCase(),
+          },
+          select: {
+            field: true,
+            order: true,
+          },
+        }),
+      ]);
+
+      if (sort.length > 0)
+        if (sortingConfig)
+          sortingQuery = { [sortingConfig.field]: sortingConfig.order };
+      if (filtersKey.length > 0)
+        filterQuery = buildFilterQuery(filterConfig, filters);
+    }
 
     const where = { storeId: store.id, ...filterQuery };
     if (Array.isArray(excludeIds) && excludeIds.length) {
       where.shopifyProductId = { notIn: excludeIds };
     }
 
-    const total = await prisma.product.count({ where });
+    const productCardSelect = {
+      id: true,
+      shopifyProductId: true,
+      handle: true,
+      title: true,
+      vendor: true,
+      featuredImage: true,
+      maxPrice: true,
+      compareAtMaxPrice: true,
+      variants: true,
+    };
+
     if (page == 1) {
       perPage = 12;
     }
 
     const skip = (Number(page) - 1) * Number(perPage);
 
-    const products = await prisma.product.findMany({
-      where,
-      orderBy: sortingQuery || { createdAt: "desc" },
-      skip,
-      take: Number(perPage),
-    });
+    const [products, total] = await prisma.$transaction([
+      prisma.product.findMany({
+        where,
+        orderBy: sortingQuery || { createdAt: "desc" },
+        skip,
+        take: Number(perPage),
+        select: productCardSelect,
+      }),
+      prisma.product.count({ where }),
+    ]);
 
     return { products, total, page: Number(page), perPage: Number(perPage) };
   } catch (err) {
