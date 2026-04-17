@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "f1852af6c75e782038e88fe437581827"
-name = "New-Recommendation-app"
+name = "Recomiq"
 application_url = "https://kinsley-innless-ariana.ngrok-free.dev"
 embedded = true
 

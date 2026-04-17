@@ -519,7 +519,7 @@ export function extractFilterableValues(product, productIdRef) {
     if (value === null || value === undefined || value === "") return;
 
     const normalizedKey = normalizeKey(key);
-    const normalizedValue = normalizeValue(value);
+    const normalizedValue = String(value).trim();
 
     if (!normalizedValue) return;
 
