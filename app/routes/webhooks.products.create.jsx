@@ -1,6 +1,7 @@
 import { normalizeWebhookProduct } from "../services/product.service.js";
 import { productSyncQueue } from "../queues/queue.js";
 import { verifyWebhook } from "../utils/webhook.js";
+import { normalizeAIProduct } from "../services/ai.service.js";
 
 export const action = async ({ request }) => {
   const rawBody = await request.text();
@@ -23,19 +24,7 @@ export const action = async ({ request }) => {
 
   await productSyncQueue.add("ai-sync", {
     aiRes: [
-      {
-        product_id: normalized.shopifyProductId,
-        title: normalized.title,
-        description: normalized?.description ?? "",
-        brand: normalized?.vendor ?? "",
-        category: normalized?.productType ?? "",
-        tags: normalized.tags ?? [],
-        metadata: {
-          ...normalized.attributes,
-          price: parseFloat(normalized.maxPrice),
-          is_available: normalized.availableForSale,
-        },
-      },
+      normalizeAIProduct(normalized)
     ],
     shop,
   });

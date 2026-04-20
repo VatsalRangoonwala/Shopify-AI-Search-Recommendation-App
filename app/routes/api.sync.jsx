@@ -2,6 +2,7 @@ import { authenticate } from "../shopify.server.js";
 import prisma from "../db.server.js";
 import { fetchProductsBatch } from "../services/product.service.js";
 import { productSyncQueue } from "../queues/queue.js";
+import { normalizeAIProduct } from "../services/ai.service.js";
 
 export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
@@ -31,19 +32,7 @@ export const action = async ({ request }) => {
 
     const aiRes = [];
     for (const product of products) {
-      aiRes.push({
-        product_id: product.shopifyProductId,
-        title: product.title,
-        description: product?.description ?? "",
-        brand: product?.vendor ?? "",
-        category: product?.productType ?? "",
-        tags: product.tags ?? [],
-        metadata: {
-          ...product.attributes,
-          price: parseFloat(product.maxPrice),
-          is_available: product.availableForSale,
-        },
-      });
+      aiRes.push(normalizeAIProduct(product));
       await productSyncQueue.add("product-sync", {
         product,
         shop: session.shop,

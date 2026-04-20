@@ -99,3 +99,32 @@ export async function aiSimilar(shop, productId, input, options = {}) {
     ttl: 180,
   });
 }
+
+export const normalizeAIProduct = (product) => {
+  try {
+    return {
+      product_id: product?.shopifyProductId,
+      title: product?.title,
+      description: product?.description ?? "",
+      brand: product?.vendor ?? "",
+      category: product?.productType ?? "",
+      tags: product?.tags ?? [],
+      metadata: {
+        weight: 0,
+        color: product?.attributes?.color ?? "",
+        size: product?.attributes?.size ?? "",
+        material:
+          product?.attributes?.material ?? product?.attributes?.fabric ?? "",
+        gender: product?.attributes?.gender ?? "",
+        age_group: product?.attributes?.ageGroup ?? "",
+        season: product?.attributes?.season ?? "",
+        collection: product?.collection ?? "",
+        price: parseFloat(product?.maxPrice),
+        is_available:
+          product?.availableForSale !== "Out of St ock" ? true : false,
+      },
+    };
+  } catch (error) {
+    console.log(error);
+  }
+};
