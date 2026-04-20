@@ -34,13 +34,40 @@
 
     <section class="ecom-section">
       <div id="ai-recommended-section" style="display:none; margin-bottom: 24px;">
-        <h3 class="ecom-section-subtitle">{{ block.settings.recommendations_title }}</h3>
+        {% comment %} <h2 class="ecom-section-subtitle">{{ block.settings.recommendations_title }}</h2> {% endcomment %}
         <div id="ai-recommended-grid" class="ecom-product-grid"></div>
       </div>
 
-      <h2 class="ecom-section-title">{{ block.settings.products_title }}</h2>
-      <div id="ai-products-grid" class="ecom-product-grid"></div>
-      <div id="ai-pagination" class="ecom-pagination" style="margin-top: 24px;"></div>
+      {% comment %} <h2 class="ecom-section-title">{{ block.settings.products_title }}</h2> {% endcomment %}
+      <div id="ai-products-shell" class="ecom-products-shell is-loading" aria-busy="true">
+        <div id="ai-products-loader" class="ecom-products-loader" role="status" aria-live="polite">
+          <div class="ecom-products-loader-copy">
+            <span class="ecom-loader-spinner" aria-hidden="true"></span>
+            <span id="ai-products-loader-text">Loading products...</span>
+          </div>
+          <div class="ecom-products-skeleton" aria-hidden="true">
+            {% for item in (1..24) %}
+              <div class="ecom-card ecom-card-skeleton">
+                <div class="ecom-card-image-wrapper">
+                  <div class="ecom-skeleton-image"></div>
+                </div>
+                <div class="ecom-card-info">
+                  <div class="ecom-skeleton-line ecom-skeleton-line-vendor"></div>
+                  <div class="ecom-skeleton-line ecom-skeleton-line-title"></div>
+                  <div class="ecom-skeleton-line ecom-skeleton-line-title ecom-skeleton-line-title-short"></div>
+                  <div class="ecom-skeleton-line ecom-skeleton-line-price"></div>
+                  <div class="ecom-card-actions">
+                    <span class="ecom-skeleton-button"></span>
+                    <span class="ecom-skeleton-button ecom-skeleton-button-light"></span>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div id="ai-products-grid" class="ecom-product-grid"></div>
+        <div id="ai-pagination" class="ecom-pagination" style="margin-top: 24px;"></div>
+      </div>
     </section>
   </main>
 </div>
@@ -315,20 +342,131 @@
     margin-bottom: 24px;
     color: var(--color-text-main);
   }
-  .ecom-product-grid {
+  .ecom-products-shell {
+    min-height: 420px;
+  }
+  .ecom-products-loader {
+    display: none;
+    margin-bottom: 24px;
+    width: 100%;
+  }
+  .ecom-products-shell.is-loading .ecom-products-loader {
+    display: block;
+  }
+  .ecom-products-loader-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text-main);
+  }
+  .ecom-loader-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: ecom-spin 0.9s linear infinite;
+  }
+  .ecom-product-grid,
+  .ecom-products-skeleton {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
   @media (min-width: 992px) {
-    .ecom-product-grid {
+    .ecom-product-grid,
+    .ecom-products-skeleton {
       grid-template-columns: repeat(3, 1fr);
       gap: 30px;
     }
   }
   @media (min-width: 1200px) {
-    .ecom-product-grid {
+    .ecom-product-grid,
+    .ecom-products-skeleton {
       grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  .ecom-products-shell.is-loading #ai-products-grid:empty + #ai-pagination:empty {
+    margin-top: 0;
+  }
+  .ecom-card-skeleton {
+    pointer-events: none;
+  }
+  .ecom-card-skeleton .ecom-card-image-wrapper {
+    margin-bottom: 16px;
+    background: transparent;
+  }
+  .ecom-card-skeleton .ecom-card-info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+  .ecom-skeleton-image,
+  .ecom-skeleton-line,
+  .ecom-skeleton-button {
+    position: relative;
+    overflow: hidden;
+    background: #ebebeb;
+  }
+  .ecom-skeleton-image::after,
+  .ecom-skeleton-line::after,
+  .ecom-skeleton-button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+    animation: ecom-shimmer 1.4s ease-in-out infinite;
+  }
+  .ecom-skeleton-image {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-md);
+  }
+  .ecom-skeleton-line {
+    height: 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .ecom-skeleton-line-vendor {
+    width: 32%;
+    height: 10px;
+  }
+  .ecom-skeleton-line-title {
+    width: 100%;
+    height: 14px;
+  }
+  .ecom-skeleton-line-title-short {
+    width: 68%;
+  }
+  .ecom-skeleton-line-price {
+    width: 42%;
+    height: 16px;
+    margin-bottom: 16px;
+  }
+  .ecom-card-skeleton .ecom-card-actions {
+    margin-top: auto;
+  }
+  .ecom-skeleton-button {
+    flex: 1;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: block;
+  }
+  .ecom-skeleton-button-light {
+    opacity: 0.7;
+  }
+  @keyframes ecom-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes ecom-shimmer {
+    100% {
+      transform: translateX(100%);
     }
   }
 
@@ -548,7 +686,7 @@
         <div class="ecom-card-vendor">${p.vendor}</div>
         <h3 class="ecom-card-title">${p.title}</h3>
         <div class="ecom-card-price">
-          <span class="ecom-price-regular">${p.maxPrice}</span>
+          <span class="ecom-price-regular">$ ${p.maxPrice}</span>
           ${comparePriceHtml}
         </div>
         <div class="ecom-card-actions">
@@ -572,6 +710,31 @@
     card.innerHTML = createProductCardHTML(p);
 
     return card;
+  }
+
+  function setProductsLoading(isLoading, message = 'Loading products...') {
+    const shell = document.getElementById('ai-products-shell');
+    const loaderText = document.getElementById('ai-products-loader-text');
+    const grid = document.getElementById('ai-products-grid');
+    const recGrid = document.getElementById('ai-recommended-grid');
+    const pagination = document.getElementById('ai-pagination');
+    const recSection = document.getElementById('ai-recommended-section');
+
+    if (!shell) return;
+
+    if (loaderText) {
+      loaderText.textContent = message;
+    }
+
+    if (isLoading) {
+      if (grid) grid.innerHTML = '';
+      if (recGrid) recGrid.innerHTML = '';
+      if (pagination) pagination.innerHTML = '';
+      if (recSection) recSection.style.display = 'none';
+    }
+
+    shell.classList.toggle('is-loading', isLoading);
+    shell.setAttribute('aria-busy', isLoading ? 'true' : 'false');
   }
 
   // --- Dynamic UI Rendering ---
@@ -618,12 +781,12 @@
         <strong>${filter.label}</strong>
         <div class="price-inputs">
           <div class="price-input-wrapper">
-            <span>₹</span>
+            <span>$</span>
             <input type="number" class="slider-input-min" value="${min}" min="${min}" max="${max}">
           </div>
           <span class="price-separator">-</span>
           <div class="price-input-wrapper">
-            <span>₹</span>
+            <span>$</span>
             <input type="number" class="slider-input-max" value="${max}" min="${min}" max="${max}">
           </div>
         </div>
@@ -681,13 +844,20 @@
         rangeMin.value = minVal;
         rangeMax.value = maxVal;
         updateSlider.call(rangeMin);
+        setProductsLoading(true, 'Updating products...');
         debouncedFetchProducts();
       }
 
       rangeMin.addEventListener('input', updateSlider);
       rangeMax.addEventListener('input', updateSlider);
-      rangeMin.addEventListener('change', debouncedLoadProducts);
-      rangeMax.addEventListener('change', debouncedLoadProducts);
+      rangeMin.addEventListener('change', () => {
+        setProductsLoading(true, 'Updating products...');
+        debouncedLoadProducts();
+      });
+      rangeMax.addEventListener('change', () => {
+        setProductsLoading(true, 'Updating products...');
+        debouncedLoadProducts();
+      });
       inputMin.addEventListener('change', updateInputs);
       inputMax.addEventListener('change', updateInputs);
 
@@ -745,6 +915,12 @@
     const shop = '{{ shop.domain }}';
     const query = document.getElementById('search-input')?.value || '';
     const sessionId = getOrCreateSessionId();
+    const recSection = document.getElementById('ai-recommended-section');
+    const pagination = document.getElementById('ai-pagination');
+
+    setProductsLoading(true, query.trim().length > 0 ? 'Searching products...' : 'Loading products...');
+    if (recSection) recSection.style.display = 'none';
+    if (pagination) pagination.innerHTML = '';
 
     if (query && query.trim().length > 0) {
       publishPixelEvent('ai_search', { query });
@@ -769,12 +945,18 @@
 
     const sort = document.getElementById('ai-sorting-select')?.value;
 
-    if (currentBrowseController) currentBrowseController.abort();
+    if (currentBrowseController) {
+      currentBrowseController.abort();
+      currentBrowseController = null;
+    }
 
     const searchController = new AbortController();
 
     try {
-      if (currentSearchController) currentSearchController.abort();
+      if (currentSearchController) {
+        currentSearchController.abort();
+        currentSearchController = null;
+      }
 
       currentSearchController = searchController;
 
@@ -790,9 +972,6 @@
       if (searchController.signal.aborted || currentSearchController !== searchController) {
         return;
       }
-
-      const recSection = document.getElementById('ai-recommended-section');
-      const pagination = document.getElementById('ai-pagination');
 
       if (recSection) recSection.style.display = 'none';
       if (pagination) pagination.innerHTML = '';
@@ -812,6 +991,7 @@
     } finally {
       if (currentSearchController === searchController) {
         currentSearchController = null;
+        setProductsLoading(false);
       }
     }
   }
@@ -914,15 +1094,20 @@
     const sessionId = getOrCreateSessionId();
     const grid = document.getElementById('ai-products-grid');
     const recGrid = document.getElementById('ai-recommended-grid');
-    grid.innerHTML = '';
-    if (recGrid) recGrid.innerHTML = '';
-
     const filters = getActiveFilters();
     const sort = document.getElementById('ai-sorting-select')?.value;
     const recSection = document.getElementById('ai-recommended-section');
 
-    if (currentSearchController) currentSearchController.abort();
-    if (currentBrowseController) currentBrowseController.abort();
+    setProductsLoading(true, page > 1 ? `Loading page ${page}...` : 'Loading products...');
+
+    if (currentSearchController) {
+      currentSearchController.abort();
+      currentSearchController = null;
+    }
+    if (currentBrowseController) {
+      currentBrowseController.abort();
+      currentBrowseController = null;
+    }
 
     const browseController = new AbortController();
     currentBrowseController = browseController;
@@ -1016,6 +1201,7 @@
     } finally {
       if (currentBrowseController === browseController) {
         currentBrowseController = null;
+        setProductsLoading(false);
       }
     }
   }
@@ -1155,6 +1341,7 @@
       e.target.id === 'ai-sorting-select'
     ) {
       // 🔥 ALWAYS use DB API for filters/sort
+      setProductsLoading(true, 'Updating products...');
       debouncedLoadProducts();
     }
   });
@@ -1166,10 +1353,8 @@
 
       if (q.trim().length > 0) {
         // 🔥 ONLY HERE use AI
+        setProductsLoading(true, 'Searching products...');
         debouncedFetchProducts();
-      } else {
-        // 🔥 BACK TO DB
-        debouncedLoadProducts();
       }
     }
   });
