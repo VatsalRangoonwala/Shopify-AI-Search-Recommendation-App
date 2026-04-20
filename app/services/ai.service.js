@@ -107,7 +107,7 @@ export const normalizeAIProduct = (product) => {
       title: product?.title,
       description: product?.description ?? "",
       brand: product?.vendor ?? "",
-      category: product?.productType ?? "",
+      category: product?.attributes?.productType[0] ?? "",
       tags: product?.tags ?? [],
       metadata: {
         weight: [0],

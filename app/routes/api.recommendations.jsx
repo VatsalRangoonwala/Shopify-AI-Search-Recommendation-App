@@ -17,18 +17,18 @@ export const action = async ({ request }) => {
   }
   if (Array.isArray(filters.productType)) {
     filters.category = filters.productType;
+    delete filters["productType"];
   }
 
   if (Array.isArray(filters.vendor)) {
     filters.brand = filters.vendor;
+    delete filters["vendor"];
   }
 
   if (Array.isArray(filters.availability)) {
-    filters.is_available =
-      filters.availability[0] == "In Stock" ? true : false;
-      delete filters['availability']
+    filters.is_available = filters.availability[0] == "In Stock" ? true : false;
+    delete filters["availability"];
   }
-console.log(filters, "f")
   const store = await prisma.store.findUnique({
     where: { shop },
     select: {
