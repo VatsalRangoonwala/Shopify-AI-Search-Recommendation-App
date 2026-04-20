@@ -465,7 +465,7 @@
 <script>
   let currentSearchController = null;
   let currentBrowseController = null;
-  const DEFAULT_PER_PAGE = 12;
+  const DEFAULT_PER_PAGE = 24;
   const RECOMMENDATION_LIMIT = 12;
 
   function debounce(fn, delay = 400) {
@@ -729,7 +729,6 @@
 
       // Render Sorting
       const select = document.getElementById('ai-sorting-select');
-      select.innerHTML = '<option value="">Newest</option>';
       sorting.forEach((option) => {
         const opt = document.createElement('option');
         opt.value = option.name;
@@ -832,11 +831,11 @@
     grid.appendChild(fragment);
   }
 
-  async function fetchRecommendations(shop, sessionId, signal) {
+  async function fetchRecommendations(shop, sessionId, signal, filters, sort) {
     const res = await fetch('/apps/api/recommendations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-      body: JSON.stringify({ shop, sessionId }),
+      body: JSON.stringify({ shop, sessionId, filters, sort }),
       signal,
     });
 
@@ -940,7 +939,7 @@
             sort,
             browseController.signal
           ),
-          fetchRecommendations(shop, sessionId, browseController.signal),
+          fetchRecommendations(shop, sessionId, browseController.signal, filters, sort),
         ]);
 
         if (browseController.signal.aborted || currentBrowseController !== browseController) {

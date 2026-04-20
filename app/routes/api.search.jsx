@@ -46,26 +46,29 @@ export const action = async ({ request }) => {
     // const sortingQuery = buildSortingQuery(sortingConfig, sort);
 
     let products = [];
+    const normalizedFilters = { ...filters };
 
     // =========================================================
     // 🔥 3. SEARCH FLOW (when query exists)
     // =========================================================
     if (query && query.trim().length > 0) {
       try {
-        const normalizedFilters = { ...filters };
-
         // normalize price filter
         if (Array.isArray(filters.price)) {
           const price = filters.price.map((p) => parseFloat(p) + 0.0000001);
           normalizedFilters.price = { min: price[0], max: price[1] };
         }
 
-        const aiResults = await aiSearch(shop, {
-          query_text: query,
-          filters: normalizedFilters,
-          limit: 12,
-          diversity_penalty: store.diversity,
-        }, { signal: request.signal });
+        const aiResults = await aiSearch(
+          shop,
+          {
+            query_text: query,
+            filters: normalizedFilters,
+            limit: 12,
+            diversity_penalty: store.diversity,
+          },
+          { signal: request.signal },
+        );
 
         products = await hydrateProducts(store.id, aiResults);
       } catch (err) {
@@ -100,14 +103,18 @@ export const action = async ({ request }) => {
     try {
       const behavior = await getUserBehavior(store.id, sessionId);
 
-      const aiResults = await aiRecommend(shop, {
-        viewed_ids: behavior.viewed.slice(0, 10),
-        added_to_cart_ids: behavior.cart.slice(0, 10),
-        purchased_ids: behavior.purchased.slice(0, 10),
-        filters,
-        limit: 12,
-        diversity_penalty: store.diversity,
-      }, { signal: request.signal });
+      const aiResults = await aiRecommend(
+        shop,
+        {
+          viewed_ids: behavior.viewed.slice(0, 10),
+          added_to_cart_ids: behavior.cart.slice(0, 10),
+          purchased_ids: behavior.purchased.slice(0, 10),
+          filters: normalizedFilters,
+          limit: 12,
+          diversity_penalty: store.diversity,
+        },
+        { signal: request.signal },
+      );
 
       products = await hydrateProducts(store.id, aiResults);
 

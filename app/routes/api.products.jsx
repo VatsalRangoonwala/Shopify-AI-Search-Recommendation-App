@@ -1,8 +1,9 @@
+import { normalizeAIProduct } from "../services/ai.service.js";
 import prisma from "../db.server.js";
 import { buildFilterQuery } from "../services/filter.service.js";
 import { PRODUCT_CARD_SELECT } from "../services/recommendation.service.js";
 
-const DEFAULT_PER_PAGE = 12;
+const DEFAULT_PER_PAGE = 24;
 const MAX_PER_PAGE = 48;
 
 function clampPageSize(value) {
