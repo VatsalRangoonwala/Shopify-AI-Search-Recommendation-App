@@ -46,6 +46,15 @@ const features = [
 const Welcome = () => {
   const navigate = useNavigate();
 
+  const normalizeProductType = async () => {
+    try {
+      await fetch("/api/onboarding/welcome").catch((err) => console.log(err));
+      navigate("/app/onboarding/data-quality")
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <OnboardingLayout currentStep={1}>
       <Card>
@@ -94,7 +103,7 @@ const Welcome = () => {
             <Button
               variant="primary"
               size="large"
-              onClick={() => navigate("/app/onboarding/data-quality")}
+              onClick={() => normalizeProductType()}
             >
               Start Setup
             </Button>

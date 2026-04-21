@@ -188,6 +188,15 @@ export function resolveCanonicalValue(existingValues, newValue) {
   return newValue;
 }
 
+export function normalizeProductType(productType, types) {
+  for (const [type, values] of Object.entries(types)) {
+    if (values.includes(productType)) {
+      return type;
+    }
+  }
+  return productType;
+}
+
 export function buildProductAttributes({
   product = {},
   variants = [],
@@ -249,7 +258,7 @@ export function buildProductAttributes({
   return attributes;
 }
 
-export function normalizeShopifyProduct(product) {
+export async function normalizeShopifyProduct(product, types) {
   const variants = product.variants?.edges?.map((v) => v.node) || [];
   const images = product.images?.edges?.map((img) => img.node) || [];
   const metafields = product.metafields?.edges?.map((m) => m.node) || [];
@@ -257,6 +266,10 @@ export function normalizeShopifyProduct(product) {
     ...variant,
     id: extractShopifyId(variant.id),
   }));
+  const normalizedProductType = await normalizeProductType(
+    product.productType,
+    types,
+  );
 
   const prices = variants
     .map((v) => parseFloat(v.price || 0))
@@ -289,7 +302,7 @@ export function normalizeShopifyProduct(product) {
     description: product.description || null,
     bodyHtml: product.descriptionHtml || null,
     vendor: product.vendor || null,
-    productType: product.productType || null,
+    productType: normalizedProductType || null,
     tags: product.tags || [],
     status: product.status || null,
 
@@ -405,7 +418,7 @@ export function normalizeWebhookProduct(product) {
   };
 }
 
-export async function fetchProductsBatch(admin, cursor = null) {
+export async function fetchProductsBatch(admin, cursor = null, productType) {
   const query = `
     query GetProducts($cursor: String) {
       products(first: 50, after: $cursor) {
@@ -502,8 +515,43 @@ export async function fetchProductsBatch(admin, cursor = null) {
   const edges = data?.data?.products?.edges || [];
 
   return {
-    products: edges.map((edge) => normalizeShopifyProduct(edge.node)),
+    products: edges.map(
+      async (edge) => await normalizeShopifyProduct(edge.node, productType),
+    ),
     nextCursor: edges.length ? edges[edges.length - 1].cursor : null,
     hasNextPage: data?.data?.products?.pageInfo?.hasNextPage || false,
   };
+}
+
+export async function fetchProductType(admin) {
+  const query = `query GetProducts($cursor: String) {
+  products(first: 250, after: $cursor) {
+    edges {
+      cursor
+      node {
+        productType
+      }
+    }
+    pageInfo {
+      hasNextPage
+      }
+    }
+  }`;
+
+  let cursor = null;
+  let allProductTypes = [];
+  let hasNextPage = true;
+
+  while (hasNextPage) {
+    const response = await admin.graphql(query, {
+      variables: { cursor },
+    });
+    const data = await response.json();
+    const edges = data?.data?.products?.edges;
+    allProductTypes.push(...edges.map((p) => p.node.productType));
+
+    cursor = edges.length ? edges[edges.length - 1].cursor : null;
+    hasNextPage = data?.data?.products?.pageInfo?.hasNextPage || false;
+  }
+  return [...new Set(allProductTypes)];
 }

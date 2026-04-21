@@ -7,7 +7,10 @@ import {
   removeProductFromFilters,
   updateFiltersForProductChange,
 } from "../services/filter.service.js";
-import { normalizeWebhookProduct } from "../services/product.service.js";
+import {
+  fetchProductType,
+  normalizeWebhookProduct,
+} from "../services/product.service.js";
 
 const worker = new Worker(
   "product-sync",
@@ -23,6 +26,40 @@ const worker = new Worker(
     // 🔥 HANDLE DIFFERENT JOB TYPES
 
     switch (job.name) {
+      case "clean-productType": {
+        const { storeId, admin } = job.data;
+
+        const allproductType = await fetchProductType(admin);
+
+        const response = await fetch(
+          `${process.env.AI_BASE_URL}/utils/normalize-categories`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ categories: allproductType }),
+          },
+        );
+
+        const data = await response.json();
+
+        await prisma.normalizedValue.upsert({
+          where: {
+            storeId,
+          },
+          update: {
+            productType: data.normalized_groups,
+          },
+          create: {
+            storeId,
+            productType: data.normalized_groups,
+          },
+        });
+
+        break;
+      }
+
       case "product-sync": {
         const { product, syncJobId } = job.data;
 

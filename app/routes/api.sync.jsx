@@ -19,6 +19,15 @@ export const action = async ({ request }) => {
     },
   });
 
+  const normaliedProductType = await prisma.normaliedValue.findUnique({
+    where: {
+      storeId: store.id,
+    },
+    select:{
+      productType:true
+    }
+  });
+
   let cursor = null;
   let total = 0;
 
@@ -26,6 +35,7 @@ export const action = async ({ request }) => {
     const { products, nextCursor, hasNextPage } = await fetchProductsBatch(
       admin,
       cursor,
+      normaliedProductType
     );
 
     total += products.length;
