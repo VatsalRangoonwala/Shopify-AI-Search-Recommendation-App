@@ -190,7 +190,7 @@ export function resolveCanonicalValue(existingValues, newValue) {
 
 export function normalizeProductType(productType, types) {
   for (const [type, values] of Object.entries(types)) {
-    if (values.includes(productType)) {
+    if (Array(values).includes(productType)) {
       return type;
     }
   }
@@ -258,7 +258,7 @@ export function buildProductAttributes({
   return attributes;
 }
 
-export async function normalizeShopifyProduct(product, types) {
+export function normalizeShopifyProduct(product, types) {
   const variants = product.variants?.edges?.map((v) => v.node) || [];
   const images = product.images?.edges?.map((img) => img.node) || [];
   const metafields = product.metafields?.edges?.map((m) => m.node) || [];
@@ -266,7 +266,7 @@ export async function normalizeShopifyProduct(product, types) {
     ...variant,
     id: extractShopifyId(variant.id),
   }));
-  const normalizedProductType = await normalizeProductType(
+  const normalizedProductType = normalizeProductType(
     product.productType,
     types,
   );
@@ -319,7 +319,7 @@ export async function normalizeShopifyProduct(product, types) {
 
     options: product.options || [],
     variants: normalizedVariants,
-    defaultVariantId: normalizedVariants[0]?.id || null,
+    defaultVariantId: String(normalizedVariants[0]?.id) || null,
 
     attributes,
     metafields: normalizeMetafields(metafields),
@@ -330,7 +330,7 @@ export async function normalizeShopifyProduct(product, types) {
   };
 }
 
-export function normalizeWebhookProduct(product) {
+export function normalizeWebhookProduct(product, types) {
   const variants = product.variants || [];
   const images = product.images || [];
   const metafields = product.metafields || []; // usually not included in webhook unless fetched separately
@@ -350,6 +350,10 @@ export function normalizeWebhookProduct(product) {
   );
 
   const availableForSale = variants.some((v) => v.available);
+  const normalizedProductType = normalizeProductType(
+    product.product_type,
+    types,
+  );
 
   const normalizedVariants = variants.map((variant) => ({
     ...variant,
@@ -383,7 +387,7 @@ export function normalizeWebhookProduct(product) {
     description: product.body_html || null,
     bodyHtml: product.body_html || null,
     vendor: product.vendor || null,
-    productType: product.product_type || null,
+    productType: normalizedProductType || null,
     tags: Array.isArray(product.tags)
       ? product.tags
       : typeof product.tags === "string"
@@ -407,7 +411,7 @@ export function normalizeWebhookProduct(product) {
 
     options,
     variants: normalizedVariants,
-    defaultVariantId: normalizedVariants[0]?.id || null,
+    defaultVariantId: String(normalizedVariants[0]?.id) || null,
 
     attributes,
     metafields: normalizeMetafields(metafields),
@@ -515,15 +519,15 @@ export async function fetchProductsBatch(admin, cursor = null, productType) {
   const edges = data?.data?.products?.edges || [];
 
   return {
-    products: edges.map(
-      async (edge) => await normalizeShopifyProduct(edge.node, productType),
+    products: edges.map((edge) =>
+      normalizeShopifyProduct(edge.node, productType),
     ),
     nextCursor: edges.length ? edges[edges.length - 1].cursor : null,
     hasNextPage: data?.data?.products?.pageInfo?.hasNextPage || false,
   };
 }
 
-export async function fetchProductType(admin) {  
+export async function fetchProductType(admin) {
   const query = `query GetProducts($cursor: String) {
   products(first: 250, after: $cursor) {
     edges {

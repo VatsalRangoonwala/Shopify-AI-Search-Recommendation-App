@@ -57,7 +57,7 @@ async function fetchAiJson(path, input, { signal, cacheKey, ttl } = {}) {
       signal: timedSignal,
     });
 
-    if (!response.ok) {
+    if (response.status != 200) {
       throw new Error(`AI request failed with status ${response.status}`);
     }
 

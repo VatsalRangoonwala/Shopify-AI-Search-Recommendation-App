@@ -19,7 +19,7 @@ export const action = async ({ request }) => {
     },
   });
 
-  const normaliedProductType = await prisma.normaliedValue.findUnique({
+  const normaliedProductType = await prisma.normalizedValue.findUnique({
     where: {
       storeId: store.id,
     },
