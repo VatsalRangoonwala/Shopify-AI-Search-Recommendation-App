@@ -523,7 +523,7 @@ export async function fetchProductsBatch(admin, cursor = null, productType) {
   };
 }
 
-export async function fetchProductType(admin) {
+export async function fetchProductType(admin) {  
   const query = `query GetProducts($cursor: String) {
   products(first: 250, after: $cursor) {
     edges {

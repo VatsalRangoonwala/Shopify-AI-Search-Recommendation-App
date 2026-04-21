@@ -27,9 +27,7 @@ const worker = new Worker(
 
     switch (job.name) {
       case "clean-productType": {
-        const { storeId, admin } = job.data;
-
-        const allproductType = await fetchProductType(admin);
+        const { storeId, allType } = job.data;
 
         const response = await fetch(
           `${process.env.AI_BASE_URL}/utils/normalize-categories`,
@@ -38,7 +36,7 @@ const worker = new Worker(
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ categories: allproductType }),
+            body: JSON.stringify({ categories: allType }),
           },
         );
 

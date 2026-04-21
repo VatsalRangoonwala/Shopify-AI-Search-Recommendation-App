@@ -10,7 +10,7 @@
 
   <main class="ecom-main">
     <div class="ecom-toolbar">
-      <div class="ecom-search-box">
+      <form class="ecom-search-box" id="ai-search-form">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="18"
@@ -21,11 +21,13 @@
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
+          .
         >
           <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" id="search-input" placeholder="Search for products...">
-      </div>
+        <input type="text" id="search-input" placeholder="Search for products..." aria-label="Search products">
+        <button type="submit" id="ai-search-submit" class="ecom-search-submit">Search</button>
+      </form>
       <div class="ecom-sort-box">
         <label for="ai-sorting-select">{{ block.settings.sorting_label }}</label>
         <select id="ai-sorting-select" class="ecom-select"></select>
@@ -34,11 +36,11 @@
 
     <section class="ecom-section">
       <div id="ai-recommended-section" style="display:none; margin-bottom: 24px;">
-        {% comment %} <h2 class="ecom-section-subtitle">{{ block.settings.recommendations_title }}</h2> {% endcomment %}
+        <h2 class="ecom-section-subtitle">{{ block.settings.recommendations_title }}</h2>
         <div id="ai-recommended-grid" class="ecom-product-grid"></div>
       </div>
 
-      {% comment %} <h2 class="ecom-section-title">{{ block.settings.products_title }}</h2> {% endcomment %}
+      <h2 class="ecom-section-title">{{ block.settings.products_title }}</h2>
       <div id="ai-products-shell" class="ecom-products-shell is-loading" aria-busy="true">
         <div id="ai-products-loader" class="ecom-products-loader" role="status" aria-live="polite">
           <div class="ecom-products-loader-copy">
@@ -112,7 +114,7 @@
     }
   }
   .ecom-sidebar-header h3 {
-    font-size: 1.25rem;
+    {% comment %} font-size: 1.25rem; {% endcomment %}
     font-weight: 600;
     margin-bottom: 20px;
     padding-bottom: 10px;
@@ -132,7 +134,7 @@
   }
   .ecom-filter-group strong {
     display: block;
-    font-size: 0.95rem;
+    {% comment %} font-size: 0.95rem; {% endcomment %}
     margin-bottom: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -146,7 +148,7 @@
     gap: 8px;
     margin-bottom: 8px;
     cursor: pointer;
-    font-size: 0.95rem;
+    {% comment %} font-size: 0.95rem; {% endcomment %}
     color: var(--color-text-light);
   }
   .ecom-checkbox-label input[type='checkbox'] {
@@ -194,7 +196,7 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 0.85rem;
+    {% comment %} font-size: 0.85rem; {% endcomment %}
     color: var(--color-text-main);
   }
   .ecom-swatch-input:checked + .ecom-swatch-text {
@@ -221,14 +223,14 @@
   }
   .price-input-wrapper span {
     color: var(--color-text-light);
-    font-size: 0.9rem;
+    {% comment %} font-size: 0.9rem; {% endcomment %}
     margin-right: 4px;
   }
   .price-input-wrapper input {
     width: 100%;
     border: none;
     outline: none;
-    font-size: 0.95rem;
+    {% comment %} font-size: 0.95rem; {% endcomment %}
     color: var(--color-text-main);
     -moz-appearance: textfield;
   }
@@ -303,10 +305,11 @@
   .ecom-search-box {
     display: flex;
     align-items: center;
+    gap: 10px;
     background: #fff;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    padding: 8px 12px;
+    padding: 0px 0px 0px 12px;
     flex: 1;
     min-width: 250px;
   }
@@ -317,8 +320,27 @@
   .ecom-search-box input {
     border: none;
     outline: none;
+    box-shadow: none;
     width: 100%;
-    font-size: 0.95rem;
+    height: 100%
+    min-width: 0;
+    {% comment %} font-size: 0.95rem; {% endcomment %}
+  }
+
+  .ecom-search-submit {
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-primary);
+    color: var(--color-secondary);
+    padding: 10px 16px;
+    {% comment %} font-size: 0.9rem; {% endcomment %}
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: var(--transition);
+  }
+  .ecom-search-submit:hover {
+    background: #333;
   }
   .ecom-sort-box {
     display: flex;
@@ -330,14 +352,14 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background-color: #fff;
-    font-size: 0.95rem;
+    {% comment %} font-size: 0.95rem; {% endcomment %}
     cursor: pointer;
   }
   .ecom-section {
     margin-bottom: 60px;
   }
   .ecom-section-title {
-    font-size: 1.5rem;
+    {% comment %} font-size: 1.5rem; {% endcomment %}
     font-weight: 600;
     margin-bottom: 24px;
     color: var(--color-text-main);
@@ -358,7 +380,7 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 18px;
-    font-size: 0.95rem;
+    {% comment %} font-size: 0.95rem; {% endcomment %}
     font-weight: 600;
     color: var(--color-text-main);
   }
@@ -501,20 +523,20 @@
     left: 10px;
     background: var(--color-sale);
     color: #fff;
-    font-size: 0.75rem;
+    {% comment %} font-size: 0.75rem; {% endcomment %}
     font-weight: bold;
     padding: 4px 8px;
     border-radius: var(--radius-sm);
     text-transform: uppercase;
   }
   .ecom-card-vendor {
-    font-size: 0.75rem;
+    {% comment %} font-size: 0.75rem; {% endcomment %}
     color: var(--color-text-light);
     text-transform: uppercase;
     margin-bottom: 4px;
   }
   .ecom-card-title {
-    font-size: 1rem;
+    {% comment %} font-size: 1rem; {% endcomment %}
     font-weight: 500;
     color: var(--color-text-main);
     margin: 0 0 8px 0;
@@ -528,13 +550,13 @@
     align-items: center;
     gap: 8px;
     font-weight: 600;
-    font-size: 1.1rem;
+    {% comment %} font-size: 1.1rem; {% endcomment %}
     margin-bottom: 16px;
   }
   .ecom-price-compare {
     text-decoration: line-through;
     color: var(--color-text-light);
-    font-size: 0.9rem;
+    {% comment %} font-size: 0.9rem; {% endcomment %}
     font-weight: 400;
   }
   .ecom-card-actions {
@@ -548,7 +570,7 @@
     padding: 10px;
     text-align: center;
     border-radius: var(--radius-sm);
-    font-size: 0.9rem;
+    {% comment %} font-size: 0.9rem; {% endcomment %}
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
@@ -570,7 +592,7 @@
     border-color: var(--color-primary);
   }
   .ecom-section-subtitle {
-    font-size: 1.125rem;
+    {% comment %} font-size: 1.125rem; {% endcomment %}
     margin-bottom: 12px;
     font-weight: 600;
     color: var(--color-text-main);
@@ -603,6 +625,7 @@
 <script>
   let currentSearchController = null;
   let currentBrowseController = null;
+  let activeSearchQuery = '';
   const DEFAULT_PER_PAGE = 24;
   const RECOMMENDATION_LIMIT = 12;
 
@@ -615,8 +638,7 @@
     };
   }
 
-  const debouncedFetchProducts = debounce(fetchProducts, 400);
-  const debouncedLoadProducts = debounce(() => loadPaginatedProducts(1), 400);
+  const debouncedRefreshProducts = debounce(() => refreshProductListing(1), 400);
   // --- Shared Utilities & Tracking ---
   function getOrCreateSessionId() {
     let sessionId = localStorage.getItem('ai_session_id');
@@ -737,6 +759,28 @@
     shell.setAttribute('aria-busy', isLoading ? 'true' : 'false');
   }
 
+  function getSearchInputValue() {
+    return document.getElementById('search-input')?.value?.trim() || '';
+  }
+
+  function refreshProductListing(page = 1) {
+    if (activeSearchQuery) {
+      return fetchProducts({ query: activeSearchQuery });
+    }
+
+    return loadPaginatedProducts(page);
+  }
+
+  function submitSearch() {
+    activeSearchQuery = getSearchInputValue();
+
+    if (activeSearchQuery) {
+      return fetchProducts({ query: activeSearchQuery, trackSearchEvent: true });
+    }
+
+    return loadPaginatedProducts(1);
+  }
+
   // --- Dynamic UI Rendering ---
   function renderCheckboxGroup(filter) {
     let html = `<div class="ecom-filter-group ecom-checkbox-group"><strong>${filter.label}</strong>`;
@@ -844,19 +888,19 @@
         rangeMin.value = minVal;
         rangeMax.value = maxVal;
         updateSlider.call(rangeMin);
-        setProductsLoading(true, 'Updating products...');
-        debouncedFetchProducts();
+        setProductsLoading(true, activeSearchQuery ? 'Searching products...' : 'Updating products...');
+        debouncedRefreshProducts();
       }
 
       rangeMin.addEventListener('input', updateSlider);
       rangeMax.addEventListener('input', updateSlider);
       rangeMin.addEventListener('change', () => {
-        setProductsLoading(true, 'Updating products...');
-        debouncedLoadProducts();
+        setProductsLoading(true, activeSearchQuery ? 'Searching products...' : 'Updating products...');
+        debouncedRefreshProducts();
       });
       rangeMax.addEventListener('change', () => {
-        setProductsLoading(true, 'Updating products...');
-        debouncedLoadProducts();
+        setProductsLoading(true, activeSearchQuery ? 'Searching products...' : 'Updating products...');
+        debouncedRefreshProducts();
       });
       inputMin.addEventListener('change', updateInputs);
       inputMax.addEventListener('change', updateInputs);
@@ -911,18 +955,24 @@
   }
 
   // --- Dynamic Fetchers (Products) ---
-  async function fetchProducts() {
+  async function fetchProducts({ query: requestedQuery = activeSearchQuery, trackSearchEvent = false } = {}) {
     const shop = '{{ shop.domain }}';
-    const query = document.getElementById('search-input')?.value || '';
+    const query = (requestedQuery || '').trim();
     const sessionId = getOrCreateSessionId();
     const recSection = document.getElementById('ai-recommended-section');
     const pagination = document.getElementById('ai-pagination');
 
+    if (!query) {
+      activeSearchQuery = '';
+      return loadPaginatedProducts(1);
+    }
+
+    activeSearchQuery = query;
     setProductsLoading(true, query.trim().length > 0 ? 'Searching products...' : 'Loading products...');
     if (recSection) recSection.style.display = 'none';
     if (pagination) pagination.innerHTML = '';
 
-    if (query && query.trim().length > 0) {
+    if (trackSearchEvent && query) {
       publishPixelEvent('ai_search', { query });
     }
 
@@ -1231,9 +1281,19 @@
   // --- Initialization & Event Listeners ---
   document.addEventListener('DOMContentLoaded', () => {
     const shop = '{{ shop.domain }}';
+    const searchForm = document.getElementById('ai-search-form');
+
     // Default: show recommendations + paginated product list
     loadPaginatedProducts(1);
     loadFiltersAndSorting(shop);
+
+    if (searchForm) {
+      searchForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        submitSearch();
+      });
+    }
+
     const grids = [document.getElementById('ai-products-grid'), document.getElementById('ai-recommended-grid')];
 
     grids.forEach((grid) => {
@@ -1333,29 +1393,23 @@
     });
   });
 
-  // Re-fetch products when checkboxes/swatches, sorting, or search changes
+  // Re-fetch products when filters or sorting change
   document.addEventListener('change', (e) => {
     if (
       e.target.matches('input[type="checkbox"]') ||
       e.target.matches('.ecom-swatch-input') ||
       e.target.id === 'ai-sorting-select'
     ) {
-      // 🔥 ALWAYS use DB API for filters/sort
-      setProductsLoading(true, 'Updating products...');
-      debouncedLoadProducts();
+      setProductsLoading(true, activeSearchQuery ? 'Searching products...' : 'Updating products...');
+      debouncedRefreshProducts();
     }
   });
 
-  // Search input: switch between search flow and paginated browsing
+  // If the user clears the search box after a submitted search, switch back to browsing.
   document.addEventListener('input', (e) => {
-    if (e.target.id === 'search-input') {
-      const q = e.target.value || '';
-
-      if (q.trim().length > 0) {
-        // 🔥 ONLY HERE use AI
-        setProductsLoading(true, 'Searching products...');
-        debouncedFetchProducts();
-      }
+    if (e.target.id === 'search-input' && !e.target.value.trim() && activeSearchQuery) {
+      activeSearchQuery = '';
+      loadPaginatedProducts(1);
     }
   });
 </script>

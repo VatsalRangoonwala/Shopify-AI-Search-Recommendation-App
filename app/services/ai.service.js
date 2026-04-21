@@ -1,7 +1,7 @@
 import { getCache, setCache } from "../utils/cache.js";
 
 const AI_BASE_URL = process.env.AI_BASE_URL;
-const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 3500);
+const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 20000);
 
 function buildCacheKey(prefix, shop, input) {
   return `${prefix}:${shop}:${Buffer.from(JSON.stringify(input)).toString("base64url")}`;
@@ -75,7 +75,7 @@ async function fetchAiJson(path, input, { signal, cacheKey, ttl } = {}) {
 
 // Search
 export async function aiSearch(shop, input, options = {}) {
-  return fetchAiJson(`/search/${shop}`, input, {
+  return fetchAiJson(`/search/v2/${shop}`, input, {
     ...options,
     cacheKey: buildCacheKey("ai:search", shop, input),
     ttl: 60,
@@ -126,4 +126,26 @@ export const normalizeAIProduct = (product) => {
   } catch (error) {
     console.log(error);
   }
+};
+
+export const normalizeAiFilters = (filters) => {
+  if (Array.isArray(filters.price)) {
+    const price = filters.price.map((p) => parseFloat(p) + 0.0000001);
+    filters.price = { min: price[0], max: price[1] };
+  }
+  if (Array.isArray(filters.productType)) {
+    filters.category = filters.productType;
+    delete filters["productType"];
+  }
+
+  if (Array.isArray(filters.vendor)) {
+    filters.brand = filters.vendor;
+    delete filters["vendor"];
+  }
+
+  if (Array.isArray(filters.availability)) {
+    filters.is_available = filters.availability[0] == "In Stock" ? true : false;
+    delete filters["availability"];
+  }
+  return filters;
 };

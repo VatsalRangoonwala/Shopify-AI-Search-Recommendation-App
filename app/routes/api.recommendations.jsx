@@ -1,5 +1,5 @@
 import prisma from "../db.server.js";
-import { aiRecommend } from "../services/ai.service.js";
+import { aiRecommend, normalizeAiFilters } from "../services/ai.service.js";
 import {
   hydrateProducts,
   PRODUCT_CARD_SELECT,
@@ -11,24 +11,8 @@ export const action = async ({ request }) => {
 
   const { shop, sessionId, filters } = body;
 
-  if (Array.isArray(filters.price)) {
-    const price = filters.price.map((p) => parseFloat(p) + 0.0000001);
-    filters.price = { min: price[0], max: price[1] };
-  }
-  if (Array.isArray(filters.productType)) {
-    filters.category = filters.productType;
-    delete filters["productType"];
-  }
+  const normalizeAi = normalizeAiFilters(filters);
 
-  if (Array.isArray(filters.vendor)) {
-    filters.brand = filters.vendor;
-    delete filters["vendor"];
-  }
-
-  if (Array.isArray(filters.availability)) {
-    filters.is_available = filters.availability[0] == "In Stock" ? true : false;
-    delete filters["availability"];
-  }
   const store = await prisma.store.findUnique({
     where: { shop },
     select: {
@@ -52,7 +36,7 @@ export const action = async ({ request }) => {
         viewed_ids: behavior.viewed.slice(0, 10),
         added_to_cart_ids: behavior.cart.slice(0, 10),
         purchased_ids: behavior.purchased.slice(0, 10),
-        filters: filters,
+        filters: normalizeAi,
         limit: 12,
         diversity_penalty: store.diversity,
       },

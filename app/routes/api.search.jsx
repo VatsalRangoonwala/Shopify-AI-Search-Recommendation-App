@@ -1,5 +1,5 @@
 import prisma from "../db.server.js";
-import { aiSearch } from "../services/ai.service.js";
+import { aiSearch, normalizeAiFilters } from "../services/ai.service.js";
 import {
   hydrateProducts,
   PRODUCT_CARD_SELECT,
@@ -24,7 +24,8 @@ export const action = async ({ request }) => {
     }
 
     let products = [];
-    const normalizedFilters = { ...filters };
+
+    const normalizeAi = normalizeAiFilters(filters);
 
     // =========================================================
     // 🔥 3. SEARCH FLOW (when query exists)
@@ -41,7 +42,7 @@ export const action = async ({ request }) => {
           shop,
           {
             query_text: query,
-            filters: normalizedFilters,
+            filters: normalizeAi,
             limit: 48,
             diversity_penalty: store.diversity,
           },
