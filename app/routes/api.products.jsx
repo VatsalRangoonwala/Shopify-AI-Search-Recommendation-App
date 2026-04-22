@@ -1,4 +1,3 @@
-import { normalizeAIProduct } from "../services/ai.service.js";
 import prisma from "../db.server.js";
 import { buildFilterQuery } from "../services/filter.service.js";
 import { PRODUCT_CARD_SELECT } from "../services/recommendation.service.js";
@@ -44,12 +43,12 @@ export const action = async ({ request }) => {
 
     const filtersKey = Object.keys(filters);
     const hasFilters = filtersKey.length > 0;
-    const hasSort = typeof sort === "string" && sort.trim().length > 0;
+    const hasSort = sort.trim().length == 0 ? "position" : sort.trim();
 
     let filterQuery = {};
     let sortingQuery = { createdAt: "desc" };
 
-    if (hasFilters || hasSort) {
+    if (hasFilters || hasSort.length > 0) {
       const [filterConfig, sortingConfig] = await Promise.all([
         hasFilters
           ? prisma.filter.findMany({
@@ -65,7 +64,7 @@ export const action = async ({ request }) => {
               },
             })
           : [],
-        hasSort
+        hasSort !== "position"
           ? prisma.sorting.findFirst({
               where: {
                 storeId: store.id,
@@ -77,7 +76,17 @@ export const action = async ({ request }) => {
                 order: true,
               },
             })
-          : null,
+          : prisma.sorting.findFirst({
+              where: {
+                storeId: store.id,
+                isActive: true,
+                position: 1,
+              },
+              select: {
+                field: true,
+                order: true,
+              },
+            }),
       ]);
 
       if (hasSort && sortingConfig) {

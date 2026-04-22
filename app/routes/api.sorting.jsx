@@ -18,6 +18,7 @@ export const loader = async ({ request }) => {
   const sorting = await prisma.sorting.findMany({
     where: { storeId: store.id, isActive: true },
     orderBy: { position: "asc" },
+    select: { name: true, label: true },
   });
 
   return Response.json(sorting);

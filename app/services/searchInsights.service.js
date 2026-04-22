@@ -1,13 +1,13 @@
 import prisma from "../db.server.js";
 
 export async function getSearchInsights(storeId) {
-
   const events = await prisma.event.findMany({
     where: { storeId },
     select: {
       type: true,
       productId: true,
     },
+    orderBy: { timestamp: "desc" },
   });
 
   const productMap = {};
@@ -24,25 +24,25 @@ export async function getSearchInsights(storeId) {
 
     if (e.type === "search") productMap[e.productId].searches++;
     if (e.type === "recommendation_click") productMap[e.productId].clicks++;
-    if (e.type === "recommendation_view") productMap[e.productId].views++;
+    if (e.type === "recommendation_click") productMap[e.productId].views++;
   });
 
   const productIds = Object.keys(productMap);
 
- const products = await prisma.product.findMany({
-  where: {
-    shopifyProductId: { in: productIds },
-  },
-  select: {
-    shopifyProductId: true,
-    title: true,
-  },
-});
+  const products = await prisma.product.findMany({
+    where: {
+      shopifyProductId: { in: productIds },
+    },
+    select: {
+      shopifyProductId: true,
+      title: true,
+    },
+  });
 
-const productTitleMap = {};
-products.forEach((p) => {
-  productTitleMap[p.shopifyProductId] = p.title;
-});
+  const productTitleMap = {};
+  products.forEach((p) => {
+    productTitleMap[p.shopifyProductId] = p.title;
+  });
 
   const result = Object.values(productMap).map((p) => {
     const clickRate =
